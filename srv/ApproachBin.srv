@@ -1,0 +1,4 @@
+std_msgs/Bool approach_bin
+---
+std_msgs/Float64 range
+std_msgs/Bool success
