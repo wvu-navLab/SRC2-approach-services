@@ -15,7 +15,8 @@ from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
-from src2_object_detection.srv import ApproachBaseStation, ApproachBaseStationResponse
+from src2_object_detection.srv import FindObject, FindObjectResponse
+from src2_approach_services.srv import ApproachChargingStation, ApproachChargingStationResponse
 from stereo_msgs.msg import DisparityImage
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range
@@ -43,21 +44,21 @@ class Obstacle:
         self.distance = distance
 
 
-class ApproachBaseStationService:
+class ApproachChargingStationService:
     """
     Service to find the base station and approach it using visual servoing
     """
     def __init__(self):
         """
         """
+        self.robot_name = rospy.get_param('~robot_name')
         rospy.on_shutdown(self.shutdown)
         self.base = False
         self.obstacles = []
         self.timeout = 60
-        self.stereo_subscriber()
         rospy.sleep(2)
         rospy.loginfo("Approach Base Station service node is running")
-        s = rospy.Service('approach_base_station_service', ApproachBaseStation, self.approach_base_station_handle)
+        s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
         rospy.spin()
 
     def stereo_subscriber(self):
@@ -66,29 +67,41 @@ class ApproachBaseStationService:
         from the stereo camera
         """
         disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
-        boxes_sub = message_filters.Subscriber("DetectedBoxes", DetectedBoxes)
-        ts = message_filters.ApproximateTimeSynchronizer([disparity_sub, boxes_sub],10, 0.1, allow_headerless=True)
+        self.ts = message_filters.ApproximateTimeSynchronizer([disparity_sub],10, 0.1, allow_headerless=True)
 
-        ts.registerCallback(self.image_callback)
+        self.ts.registerCallback(self.image_callback)
 
-    def image_callback(self, disparity, boxes):
+    def image_callback(self, disparity):
         """
         Subscriber callback for the stereo camera, with synchronized images
         """
         self.obstacles = []
         self.disparity = disparity
-        self.boxes = boxes
+
+        ##Calling the service
+        rospy.wait_for_service('/find_object')
+        _find_object =rospy.ServiceProxy('/find_object', FindObject)
+        try:
+            _find_object = _find_object(robot_name = self.robot_name)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+        self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
             dist = self.object_distance_estimation(obstacle)
             self.obstacles.append(Obstacle(obstacle,dist.object_position.point.z))
 
-    def approach_base_station_handle(self, req):
+    def approach_charging_station_handle(self, req):
         """
         Service for approaching the base station in the SRC qualification
         """
-        response = self.search_for_base_station()
         rospy.loginfo("Aprroach Base Station Service Started")
+        self.stereo_subscriber()
+        rospy.sleep(0.5) #fix it - subscriber needs to run one time before the rest of the code starts
+        response = self.search_for_base_station()
+
+        #subscriber unregister #todo figure out how to unregisterd 
+        print(dir(self.ts))
         return response
 
     def search_for_base_station(self):
@@ -113,7 +126,7 @@ class ApproachBaseStationService:
                     self.face_base()
                 self.stop()
                 break
-        response = ApproachBaseStationResponse()
+        response = ApproachChargingStationResponse()
         resp = Bool()
         resp.data = search
         response.success = resp
@@ -167,7 +180,7 @@ class ApproachBaseStationService:
             speed = minimum_dist/10.0
             rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
             self.drive(speed, rotation_speed)
-            if laser < LASER_RANGE and laser!=0.0: #(self.base.xmax-self.base.xmin) > 340 
+            if laser < LASER_RANGE and laser!=0.0: #(self.base.xmax-self.base.xmin) > 340
                 break
         print("Close to base station")
         self.stop()
@@ -294,7 +307,7 @@ class ApproachBaseStationService:
 def main():
     try:
         rospy.init_node('approach_base_station',anonymous=True)
-        object_estimation_service_call = ApproachBaseStationService()
+        object_estimation_service_call = ApproachChargingStationService()
     except rospy.ROSInterruptException:
         pass
 
