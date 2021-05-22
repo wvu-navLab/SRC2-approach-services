@@ -29,6 +29,7 @@ from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
 
+from base_approach_class import BaseApproachClass
 
 print_to_terminal = rospy.get_param('approach_base_station_service/print_to_terminal', False)
 ROVER_MIN_VEL = rospy.get_param('approach_base_station_service/rover_min_vel', 0.8)
@@ -44,7 +45,7 @@ class Obstacle:
         self.distance = distance
 
 
-class ApproachChargingStationService:
+class ApproachChargingStationService(BaseApproachClass):
     """
     Service to find the base station and approach it using visual servoing
     """
@@ -100,7 +101,7 @@ class ApproachChargingStationService:
         rospy.sleep(0.5) #fix it - subscriber needs to run one time before the rest of the code starts
         response = self.search_for_base_station()
 
-        #subscriber unregister #todo figure out how to unregisterd 
+        #subscriber unregister #todo figure out how to unregisterd
         print(dir(self.ts))
         return response
 
@@ -186,17 +187,6 @@ class ApproachChargingStationService:
         self.stop()
         return self.laser_mean(), True
 
-    def turn_in_place(self, direction):
-        """
-        Turn in place clockwise or counter clockwise
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
-        _cmd_message = Twist()
-        _cmd_message.angular.z = 0.25*direction
-        for i in range(2):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
     def object_distance_estimation(self, object):
         """
         Estimate distance from arg object to the camera of the robot.
@@ -210,29 +200,6 @@ class ApproachChargingStationService:
             print("Service did not process request: " + str(exc))
         return(object_distance)
 
-    def drive(self,speed, heading):
-        """
-        Drive function, send args to the cmd velocity topic
-        Args:
-        speed: linear x velocity of the robot
-        heading: angular z velocity of the robot
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
-        _cmd_message = Twist()
-        _cmd_message.linear.x = speed
-        _cmd_message.angular.z = heading
-        for i in range(5):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-    def stop(self):
-        """
-        Stop the rover sending zeros cmd velocity
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
-        _cmd_message = Twist()
-        _cmd_publisher.publish(_cmd_message)
-        _cmd_publisher.publish(_cmd_message)
 
     def check_for_base_station(self,boxes):
         """
@@ -251,24 +218,7 @@ class ApproachChargingStationService:
             if box.id == 5:
                 self.obstacle_boxes.append(box)
 
-    def laser_mean(self):
-        """
-        Return the average distance from +- 30 deg from the center of the laser
-        """
-        laser = rospy.wait_for_message("laser/scan", LaserScan)
-        _val = 0
-        _ind = 0
-        for i in laser.ranges[20:80]:
-            if not np.isinf(i):
-                _val+=i
-                _ind+=1
-        if _ind != 0:
-            range = _val/_ind
-            if print_to_terminal:
-                print("Laser Range: {}".format(range))
-            return range
-        else:
-            return 0.0
+
 
     def face_base(self):
         """
@@ -283,26 +233,6 @@ class ApproachChargingStationService:
             self.drive(0.0, (-x_mean/320)/4) # was 640
             if np.abs(x_mean)<40: # was 10
                 break
-
-    def toggle_light(self, value):
-        """
-        Service to toggle the lights with float value from zero to one
-        as the light internsity (0 being off and 1 high beam)
-        """
-        rospy.wait_for_service('spot_light')
-        toggle_light_call = rospy.ServiceProxy('spot_light', SpotLightSrv)
-        try:
-            toggle_light_call = toggle_light_call(float(value))
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-
-    def shutdown(self):
-        """
-        Shutdown Node
-        """
-        self.stop()
-        rospy.loginfo("Approach Base Station service node is shutdown")
-        rospy.sleep(1)
 
 def main():
     try:
