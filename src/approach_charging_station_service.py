@@ -62,15 +62,19 @@ class ApproachChargingStationService(BaseApproachClass):
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
         rospy.spin()
 
-    def stereo_subscriber(self):
+    def image_subscriber(self):
         """
         Define the Subscriber with time synchronization among the image topics
         from the stereo camera
         """
-        disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
-        self.ts = message_filters.ApproximateTimeSynchronizer([disparity_sub],10, 0.1, allow_headerless=True)
+        self.disparity_sub = rospy.Subscriber("disparity", DisparityImage, self.image_callback)
+        #disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
+        #self.ts = message_filters.ApproximateTimeSynchronizer([disparity_sub],10, 0.1, allow_headerless=True)
+        #self.ts.registerCallback(self.image_callback)
 
-        self.ts.registerCallback(self.image_callback)
+    def image_unregister(self):
+        self.disparity_sub.unregister()
+
 
     def image_callback(self, disparity):
         """
@@ -97,12 +101,13 @@ class ApproachChargingStationService(BaseApproachClass):
         Service for approaching the base station in the SRC qualification
         """
         rospy.loginfo("Aprroach Base Station Service Started")
-        self.stereo_subscriber()
+        self.image_subscriber()
         rospy.sleep(0.5) #fix it - subscriber needs to run one time before the rest of the code starts
         response = self.search_for_base_station()
 
         #subscriber unregister #todo figure out how to unregisterd
-        print(dir(self.ts))
+        self.image_unregister()
+        print("Subscriber unregisterd")
         return response
 
     def search_for_base_station(self):
