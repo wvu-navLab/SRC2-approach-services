@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+  <group ns="small_hauler_1">
+
+
+    <node name="approach_excavator_node" pkg="src2_approach_services" type="approach_excavator.py" output="screen">
+      <param name="/robot_name" type="string" value="small_hauler_1"/>
+    </node>
+
+  </group>
+</launch>

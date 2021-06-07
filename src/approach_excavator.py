@@ -15,12 +15,15 @@ from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
+from src2_object_detection.srv import FindObject, FindObjectResponse
 from src2_object_detection.srv import ApproachExcavator, ApproachExcavatorResponse
 from stereo_msgs.msg import DisparityImage
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import LaserScan
 from srcp2_msgs.srv import LocalizationSrv, SpotLightSrv  # AprioriLocationSrv,
+
+from base_approach_class import BaseApproachClass
 
 import message_filters  # for sincronizing time
 from cv_bridge import CvBridge, CvBridgeError
@@ -48,7 +51,7 @@ class Obstacle:
         self.distance = distance
 
 
-class ApproachExcavatorService:
+class ApproachExcavatorService(BaseApproachClass):
     """
     Service to find the excavator and approach it using visual servoing
     """
@@ -58,45 +61,71 @@ class ApproachExcavatorService:
         """
         rospy.on_shutdown(self.shutdown)
         self.rover = False
+        self.robot_name = rospy.get_param('~robot_name')
+        print(self.robot_name)
         self.obstacles = []
         self.timeout = 60
-        self.stereo_subscriber()
+        self.boxes = DetectedBoxes()
         rospy.sleep(2)
         rospy.loginfo("Approach Excavator service node is running")
         s = rospy.Service('approach_excavator_service', ApproachExcavator,
                           self.approach_excavator_handle)
         rospy.spin()
 
-    def stereo_subscriber(self):
+    def image_subscriber(self):
         """
         Define the Subscriber with time synchronization among the image topics
         from the stereo camera
         """
-        disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
-        boxes_sub = message_filters.Subscriber("DetectedBoxes", DetectedBoxes)
-        ts = message_filters.ApproximateTimeSynchronizer(
-            [disparity_sub, boxes_sub], 10, 0.1, allow_headerless=True)
+        self.disparity_sub = rospy.Subscriber("disparity", DisparityImage, self.disparity_callback)
+        self.image_sub = rospy.Subscriber("camera/left/image_raw", Image, self.image_callback)
 
-        ts.registerCallback(self.image_callback)
+        #disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
+        #self.ts = message_filters.ApproximateTimeSynchronizer([disparity_sub],10, 0.1, allow_headerless=True)
+        #self.ts.registerCallback(self.image_callback)
 
-    def image_callback(self, disparity, boxes):
+    def image_unregister(self):
+        rospy.loginfo("Aprroach Excavator Unregister")
+        self.disparity_sub.unregister()
+        self.image_sub .unregister()
+
+    def image_callback(self, img):
+        """
+        Subscriber callback for the stereo camera, with synchronized images
+        """
+        self.left_image = img
+
+
+    def disparity_callback(self, disparity):
         """
         Subscriber callback for the stereo camera, with synchronized images
         """
         self.obstacles = []
         self.disparity = disparity
-        self.boxes = boxes
+
+        ##Calling the service
+        rospy.wait_for_service('/find_object')
+        _find_object =rospy.ServiceProxy('/find_object', FindObject)
+        try:
+            _find_object = _find_object(robot_name = self.robot_name)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+        print(_find_object)
+        self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
             dist = self.object_distance_estimation(obstacle)
-            self.obstacles.append(Obstacle(obstacle, dist.object_position.point.z))
+            self.obstacles.append(Obstacle(obstacle,dist.object_position.point.z))
 
     def approach_excavator_handle(self, req):
         """
         Service for approaching the excavator in the SRC qualification
         """
+        rospy.loginfo("Aprroach Excavator Service Started")
+        self.image_subscriber() # start subscriber
         response = self.search_for_excavator()
         rospy.loginfo("Aprroach Excavator Service Started")
+        self.image_unregister()
         return response
 
     def search_for_excavator(self):
@@ -121,6 +150,7 @@ class ApproachExcavatorService:
                     self.face_excavator()
                 self.stop()
                 break
+        self.stop()
         response = ApproachExcavatorResponse()
         resp = Bool()
         resp.data = search
@@ -197,54 +227,6 @@ class ApproachExcavatorService:
         self.stop()
         return self.laser_mean(), True
 
-    def turn_in_place(self, direction):
-        """
-        Turn in place clockwise or counter clockwise
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=10)
-        _cmd_message = Twist()
-        _cmd_message.angular.z = ROTATIONAL_SPEED*direction
-        for i in range(2):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-    def object_distance_estimation(self, object):
-        """
-        Estimate distance from arg object to the camera of the robot.
-        Requires disparity image
-        """
-        rospy.wait_for_service('object_estimation')  # Change the name of the service
-        object_estimation_call = rospy.ServiceProxy('object_estimation', ObjectEstimation)
-        try:
-            object_distance = object_estimation_call(object, self.disparity)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-        return(object_distance)
-
-    def drive(self, speed, heading):
-        """
-        Drive function, send args to the cmd velocity topic
-        Args:
-        speed: linear x velocity of the robot
-        heading: angular z velocity of the robot
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=10)
-        _cmd_message = Twist()
-        _cmd_message.linear.x = speed
-        _cmd_message.angular.z = heading
-        for i in range(5):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-    def stop(self):
-        """
-        Stop the rover sending zeros cmd velocity
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=1)
-        _cmd_message = Twist()
-        _cmd_publisher.publish(_cmd_message)
-        _cmd_publisher.publish(_cmd_message)
-
     def check_for_excavator(self, boxes):
         """
         Check if excavator exist in the bounding boxes
@@ -252,34 +234,6 @@ class ApproachExcavatorService:
         for box in boxes:
             if box.id == 3:
                 self.rover = box
-
-    def check_for_obstacles(self, boxes):
-        """
-        Check if obstacles exist in the bounding boxes
-        """
-        self.obstacle_boxes = []
-        for box in boxes:
-            if box.id == 5:
-                self.obstacle_boxes.append(box)
-
-    def laser_mean(self):
-        """
-        Return the average distance from +- 30 deg from the center of the laser
-        """
-        laser = rospy.wait_for_message("laser/scan", LaserScan)
-        _val = 0
-        _ind = 0
-        for i in laser.ranges[20:80]:
-            if not np.isinf(i):
-                _val += i
-                _ind += 1
-        if _ind != 0:
-            range = _val/_ind
-            if print_to_terminal:
-                print("Laser Range: {}".format(range))
-            return range
-        else:
-            return 0.0
 
     def face_excavator(self):
         """
@@ -295,17 +249,6 @@ class ApproachExcavatorService:
             if np.abs(x_mean) < 40:
                 break
 
-    def toggle_light(self, value):
-        """
-        Service to toggle the lights with float value from zero to one
-        as the light internsity (0 being off and 1 high beam)
-        """
-        rospy.wait_for_service('spot_light')
-        toggle_light_call = rospy.ServiceProxy('spot_light', SpotLightSrv)
-        try:
-            toggle_light_call = toggle_light_call(float(value))
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
 
     def shutdown(self):
         """
