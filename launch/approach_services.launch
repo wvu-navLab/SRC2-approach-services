@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-
-  <node name="approach_charging_station" pkg="src2_approach_services" type="approach_charging_station_service.py" output="screen">
-  </node>
-
-</launch>

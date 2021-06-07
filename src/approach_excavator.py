@@ -61,7 +61,7 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         rospy.on_shutdown(self.shutdown)
         self.rover = False
-        self.robot_name = rospy.get_param('~robot_name')
+        self.robot_name = rospy.get_param('robot_name')
         print(self.robot_name)
         self.obstacles = []
         self.timeout = 60
