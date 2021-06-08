@@ -15,7 +15,7 @@ from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
-from src2_object_detection.srv import ApproachBin, ApproachBinResponse
+from src2_approach_services.srv import ApproachBin, ApproachBinResponse
 from stereo_msgs.msg import DisparityImage
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range

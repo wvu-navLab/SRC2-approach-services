@@ -16,7 +16,7 @@ from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
 from src2_object_detection.srv import FindObject, FindObjectResponse
-from src2_object_detection.srv import ApproachExcavator, ApproachExcavatorResponse
+from src2_approach_services.srv import ApproachExcavator, ApproachExcavatorResponse
 from stereo_msgs.msg import DisparityImage
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range
