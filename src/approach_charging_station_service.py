@@ -53,6 +53,7 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         """
         self.robot_name = rospy.get_param("robot_name")
+
         # self.robot_name = 'small_scout_1'
         rospy.on_shutdown(self.shutdown)
         self.base = False
