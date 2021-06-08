@@ -58,6 +58,7 @@ class ApproachChargingStationService(BaseApproachClass):
         self.base = False
         self.obstacles = []
         self.timeout = 60
+        self.boxes = DetectedBoxes()
         rospy.sleep(2)
         rospy.loginfo("Approach Base Station service node is running")
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
@@ -101,7 +102,7 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         Service for approaching the base station in the SRC qualification
         """
-        rospy.loginfo("Aprroach Base Station Service Started")
+        rospy.loginfo("Approach Base Station Service Started")
         self.image_subscriber()
         rospy.sleep(0.5) #fix it - subscriber needs to run one time before the rest of the code starts
         response = self.search_for_base_station()
