@@ -15,12 +15,16 @@ from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
+from src2_object_detection.srv import FindObject, FindObjectResponse
 from src2_approach_services.srv import ApproachBin, ApproachBinResponse
 from stereo_msgs.msg import DisparityImage
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import LaserScan
 from srcp2_msgs.srv import LocalizationSrv, SpotLightSrv  # AprioriLocationSrv,
+
+from base_approach_class import BaseApproachClass
+
 
 import message_filters  # for sincronizing time
 from cv_bridge import CvBridge, CvBridgeError
@@ -48,7 +52,7 @@ class Obstacle:
         self.distance = distance
 
 
-class ApproachbinService:
+class ApproachbinService(BaseApproachClass):
     """
     Service to find the bin and approach it using visual servoing
     """
@@ -56,36 +60,53 @@ class ApproachbinService:
     def __init__(self):
         """
         """
+
+        self.robot_name = rospy.get_param("robot_name")
         rospy.on_shutdown(self.shutdown)
         self.rover = False
         self.obstacles = []
         self.timeout = 60
-        self.stereo_subscriber()
+        self.boxes = DetectedBoxes()
         rospy.sleep(2)
         rospy.loginfo("Approach bin service node is running")
         s = rospy.Service('approach_bin_service', ApproachBin,
                           self.approach_bin_handle)
         rospy.spin()
 
-    def stereo_subscriber(self):
+    def image_subscriber(self):
         """
         Define the Subscriber with time synchronization among the image topics
         from the stereo camera
         """
-        disparity_sub = message_filters.Subscriber("disparity", DisparityImage)
-        boxes_sub = message_filters.Subscriber("DetectedBoxes", DetectedBoxes)
-        ts = message_filters.ApproximateTimeSynchronizer(
-            [disparity_sub, boxes_sub], 10, 0.1, allow_headerless=True)
+        self.disparity_sub = rospy.Subscriber("disparity", DisparityImage, self.disparity_callback)
 
-        ts.registerCallback(self.image_callback)
+    def image_unregister(self):
+        rospy.loginfo("Aprroach Bin Unregister")
+        self.disparity_sub.unregister()
 
-    def image_callback(self, disparity, boxes):
+
+    def image_callback(self, img):
+        """
+        Subscriber callback for the stereo camera, with synchronized images
+        """
+        self.left_image = img
+
+
+    def disparity_callback(self, disparity):
         """
         Subscriber callback for the stereo camera, with synchronized images
         """
         self.obstacles = []
         self.disparity = disparity
-        self.boxes = boxes
+        ##Calling the service
+        rospy.wait_for_service('/find_object')
+        _find_object =rospy.ServiceProxy('/find_object', FindObject)
+        try:
+            _find_object = _find_object(robot_name = self.robot_name)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+        print(_find_object)
+        self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
             dist = self.object_distance_estimation(obstacle)
@@ -95,8 +116,11 @@ class ApproachbinService:
         """
         Service for approaching the bin in the SRC qualification
         """
+
+        self.image_subscriber()
         response = self.search_for_bin()
         rospy.loginfo("Aprroach bin Service Started")
+        self.image_unregister()
         return response
 
     def search_for_bin(self):
@@ -121,7 +145,6 @@ class ApproachbinService:
                     self.face_regolith()
                     # self.hauler_dump(2.0)
                 self.stop()
-
                 break
         response = ApproachBinResponse()
         resp = Bool()
@@ -160,7 +183,7 @@ class ApproachbinService:
             if laser < 10.0:
                 minimum_dist = ROVER_MIN_VEL*10
             if toggle_light_ == 1:
-                self.toggle_light(10)
+                self.toggle_light(0)
                 toggle_light_ = 0
             else:
                 self.toggle_light(0)
@@ -197,7 +220,7 @@ class ApproachbinService:
                 break
         print("Close to bin")
         print("BEGIN DUMPING")
-        # self.hauler_dump(2.0)
+        self.hauler_dump(2.0) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
 
         self.stop()
         return self.laser_mean(), True
@@ -306,7 +329,7 @@ class ApproachbinService:
             if print_to_terminal:
                 print("base station mean in pixels: {}".format(-x_mean))
             self.drive(0.0, (-x_mean/320)/4)
-            if np.abs(x_mean) < 100:
+            if np.abs(x_mean) < 150:
                 break
 
     def hauler_dump(self, value):
