@@ -38,7 +38,7 @@ print_to_terminal = rospy.get_param('approach_bin/print_to_terminal', True)
 ROVER_MIN_VEL = rospy.get_param('approach_bin/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_bin/approach_timeout', 50)
 # LASER_RANGE = rospy.get_param('approach_bin/laser_range',  2.0)
-LASER_RANGE = 4.5
+LASER_RANGE = 5.5
 ROTATIONAL_SPEED = rospy.get_param('approach_bin/rotational_speed',  0.25)
 
 
@@ -171,9 +171,9 @@ class ApproachbinService(BaseApproachClass):
             rospy.get_time()
         init_time = rospy.get_time()
         toggle_light_ = 1
-        print("ENTERING WHILE LOOP")
+        # print("ENTERING WHILE LOOP")
         while True:
-            print("INSIDE WHILE LOOP")
+            # print("INSIDE WHILE LOOP")
             self.check_for_bin(self.boxes.boxes)
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             minimum_dist = 10
@@ -209,7 +209,7 @@ class ApproachbinService(BaseApproachClass):
             speed = minimum_dist/10.0
             print("SPEED : ", speed)
             rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
-            print("ENTERING DRIVE")
+            # print("ENTERING DRIVE")
             self.drive(speed, rotation_speed)
             print("Distance Inference")
             print(self.object_distance_estimation(self.rover).object_position.point.z)
@@ -217,10 +217,20 @@ class ApproachbinService(BaseApproachClass):
             print(laser)
             # (self.rover.xmax-self.rover.xmin) > 200
             if laser < LASER_RANGE and laser != 0.0:
-                break
-        print("Close to bin")
+                self.stop()
+                self.face_regolith()
+                # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+                print("******DOING SLOW/CLOSE BIN APPROACH********")
+                self.drive(speed/4, 0.0)
+                if laser < LASER_RANGE/2 and laser !=0.0:
+                    print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, ready to dump")
+                    self.stop()
+                    break
+
+
+        rospy.sleep(0.1)
         print("BEGIN DUMPING")
-        self.hauler_dump(2.0) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
+        self.hauler_dump(4.0) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
 
         self.stop()
         return self.laser_mean(), True
@@ -329,7 +339,7 @@ class ApproachbinService(BaseApproachClass):
             if print_to_terminal:
                 print("base station mean in pixels: {}".format(-x_mean))
             self.drive(0.0, (-x_mean/320)/4)
-            if np.abs(x_mean) < 150:
+            if np.abs(x_mean) < 100:
                 break
 
     def hauler_dump(self, value):
@@ -342,8 +352,9 @@ class ApproachbinService(BaseApproachClass):
         _cmd_message = float(value)
         for i in range(5):
             _cmd_pub_dump.publish(_cmd_message)
-            rospy.sleep(0.05)
+            rospy.sleep(0.1)
         print("*******DUMP FINISHED")
+        rospy.sleep(0.1)
         self.hauler_bin_reset(0.0)
 
 
