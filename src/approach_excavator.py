@@ -37,7 +37,7 @@ print_to_terminal = rospy.get_param('approach_excavator/print_to_terminal', True
 ROVER_MIN_VEL = rospy.get_param('approach_excavator/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_excavator/approach_timeout', 50)
 # LASER_RANGE = rospy.get_param('approach_excavator/laser_range',  2.0)
-LASER_RANGE = 4
+LASER_RANGE = 6
 ROTATIONAL_SPEED = rospy.get_param('approach_excavator/rotational_speed',  0.25)
 
 
@@ -222,16 +222,7 @@ class ApproachExcavatorService(BaseApproachClass):
             print(laser)
             # (self.rover.xmax-self.rover.xmin) > 200
             if laser < LASER_RANGE and laser != 0.0:
-                self.stop()
-                self.face_excavator()
-                # if within LASER_RANGE, approach to half that distance ~2m? very slowly
-                print("******DOING SLOW/CLOSE EXCAV APPROACH********")
-                self.drive(speed/4, 0.0)
-                if laser < LASER_RANGE/2 and laser !=0.0:
-                    print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, WAITING FOR VOLATILES")
-                    self.stop()
-                    break
-
+                break
         print("Close to Excavator")
         self.stop()
         return self.laser_mean(), True
@@ -255,7 +246,7 @@ class ApproachExcavatorService(BaseApproachClass):
             if print_to_terminal:
                 print("base station mean in pixels: {}".format(-x_mean))
             self.drive(0.0, (-x_mean/320)/4)
-            if np.abs(x_mean) < 130:
+            if np.abs(x_mean) < 200:
                 break
 
 
