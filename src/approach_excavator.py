@@ -222,7 +222,16 @@ class ApproachExcavatorService(BaseApproachClass):
             print(laser)
             # (self.rover.xmax-self.rover.xmin) > 200
             if laser < LASER_RANGE and laser != 0.0:
-                break
+                self.stop()
+                self.face_excavator()
+                # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+                print("******DOING SLOW/CLOSE EXCAV APPROACH********")
+                self.drive(speed/4, 0.0)
+                if laser < LASER_RANGE/2 and laser !=0.0:
+                    print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, WAITING FOR VOLATILES")
+                    self.stop()
+                    break
+
         print("Close to Excavator")
         self.stop()
         return self.laser_mean(), True
@@ -246,7 +255,7 @@ class ApproachExcavatorService(BaseApproachClass):
             if print_to_terminal:
                 print("base station mean in pixels: {}".format(-x_mean))
             self.drive(0.0, (-x_mean/320)/4)
-            if np.abs(x_mean) < 40:
+            if np.abs(x_mean) < 130:
                 break
 
 
