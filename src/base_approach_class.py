@@ -46,7 +46,8 @@ class Obstacle:
 
 class BaseApproachClass:
     """
-    Service to find the base station and approach it using visual servoing
+    Base class for robot approach services with standard driving and sensor
+    data processing for performing approach maneuvers
     """
     def __init__(self):
         """
