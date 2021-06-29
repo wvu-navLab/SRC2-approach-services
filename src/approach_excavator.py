@@ -37,7 +37,7 @@ print_to_terminal = rospy.get_param('approach_excavator/print_to_terminal', True
 ROVER_MIN_VEL = rospy.get_param('approach_excavator/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_excavator/approach_timeout', 50)
 # LASER_RANGE = rospy.get_param('approach_excavator/laser_range',  2.0)
-LASER_RANGE = 6
+LASER_RANGE = 8
 ROTATIONAL_SPEED = rospy.get_param('approach_excavator/rotational_speed',  0.25)
 
 
