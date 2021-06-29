@@ -198,17 +198,18 @@ class ApproachExcavatorService(BaseApproachClass):
                 rospy.logerr("Timeout in approach excavator service")
                 print("TIMEOUT !! in approach excavator service")
                 return 0.0, False
-            for obstacle_ in self.obstacles:
-                print("ENTERING OBSTACLE LOOP")
-                obstacle_mean_ = float(obstacle_.obstacle.xmin+obstacle_.obstacle.xmax)/2.0-320
-                turning_offset_i = turning_offset
-                if obstacle_.distance > 0.1:
-                    if obstacle_.distance < minimum_dist:
-                        minimum_dist = obstacle_.distance
-                    if obstacle_.distance < 8:
-                        turning_offset += np.sign(obstacle_mean_)*0.3 * \
-                            (1-np.abs(obstacle_mean_)/320.0)
-            print("EXITING OBSTACLE LOOP")
+            # for obstacle_ in self.obstacles:
+            #     print("ENTERING OBSTACLE LOOP")
+            #     obstacle_mean_ = float(obstacle_.obstacle.xmin+obstacle_.obstacle.xmax)/2.0-320
+            #     turning_offset_i = turning_offset
+            #     if obstacle_.distance > 0.1:
+            #         if obstacle_.distance < minimum_dist:
+            #             minimum_dist = obstacle_.distance
+            #         if obstacle_.distance < 8:
+            #             turning_offset += np.sign(obstacle_mean_)*0.3 * \
+            #                 (1-np.abs(obstacle_mean_)/320.0)
+            # print("EXITING OBSTACLE LOOP")
+
             if laser < 5:
                 minimum_dist = 3.0
             speed = minimum_dist/10.0
@@ -222,7 +223,16 @@ class ApproachExcavatorService(BaseApproachClass):
             print(laser)
             # (self.rover.xmax-self.rover.xmin) > 200
             if laser < LASER_RANGE and laser != 0.0:
-                break
+                self.stop()
+                self.face_excavator()
+                # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+                print("******DOING SLOW/CLOSE EXCAVATOR APPROACH********")
+                self.drive(speed/4, 0.0)
+                if laser < LASER_RANGE/2 and laser !=0.0:
+                    print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m")
+                    self.stop()
+                    break
+                
         print("Close to Excavator")
         self.stop()
         return self.laser_mean(), True
