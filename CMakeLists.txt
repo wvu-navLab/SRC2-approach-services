@@ -75,15 +75,14 @@ catkin_package(
 ################################################################################
 # Install
 ################################################################################
-install(PROGRAMS
+install(PROGRAMS src/align_base_station_service.py src/approach_bin.py src/approach_charging_station_service.py src/approach_excavator.py src/base_approach_class.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 
 install(DIRECTORY launch/
-	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
 ##########################
 #######EXECUTABLES########
 ##########################
-
