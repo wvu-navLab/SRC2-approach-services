@@ -354,7 +354,7 @@ class ApproachbinService(BaseApproachClass):
             _cmd_pub_dump.publish(_cmd_message)
             rospy.sleep(0.1)
         print("*******DUMP FINISHED")
-        rospy.sleep(0.1)
+        rospy.sleep(10)
         self.hauler_bin_reset(0.0)
 
 
