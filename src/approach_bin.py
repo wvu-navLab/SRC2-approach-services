@@ -229,7 +229,7 @@ class ApproachbinService(BaseApproachClass):
 
         rospy.sleep(0.1)
         print("BEGIN DUMPING")
-        self.drive(0.05,0.0)
+        self.drive(0.1,0.0)
         rospy.sleep(5)
         self.hauler_dump(1.57) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
         rospy.sleep(10)
