@@ -227,11 +227,16 @@ class ApproachbinService(BaseApproachClass):
                     self.stop()
                     break
 
-
         rospy.sleep(0.1)
         print("BEGIN DUMPING")
-        self.hauler_dump(4.0) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
-
+        self.drive(0.05,0.0)
+        rospy.sleep(5)
+        self.hauler_dump(1.57) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
+        rospy.sleep(10)
+        self.hauler_dump(3.14)
+        self.stop() 
+        self.hauler_bin_reset(0.0)
+        
         self.stop()
         return self.laser_mean(), True
 
@@ -354,8 +359,6 @@ class ApproachbinService(BaseApproachClass):
             _cmd_pub_dump.publish(_cmd_message)
             rospy.sleep(0.1)
         print("*******DUMP FINISHED")
-        rospy.sleep(10)
-        self.hauler_bin_reset(0.0)
 
 
     def hauler_bin_reset(self, value):
