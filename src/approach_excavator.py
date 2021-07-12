@@ -39,7 +39,7 @@ APPROACH_TIMEOUT = rospy.get_param('approach_excavator/approach_timeout', 50)
 ROTATIONAL_SPEED = rospy.get_param('approach_excavator/rotational_speed',  0.25)
 # LASER_RANGE = rospy.get_param('approach_excavator/laser_range',  2.0)
 LASER_RANGE = 8.0
-LASER_CLOSE_RANGE = 3.0
+LASER_CLOSE_RANGE = 4.5
 LASER_THRES = 8.0
 
 
