@@ -55,7 +55,6 @@ class BaseApproachClass:
         """
         pass
 
-
     def turn_in_place(self, direction):
         """
         Turn in place clockwise or counter clockwise
@@ -176,7 +175,7 @@ class BaseApproachClass:
         """
         for box in boxes:
             if box.id == 1:
-                self.base = box                
+                self.base = box
 
     def laser_mean(self):
         """

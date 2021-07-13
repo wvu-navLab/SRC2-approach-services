@@ -217,7 +217,7 @@ class ApproachbinService(BaseApproachClass):
             #                 (1-np.abs(obstacle_mean_)/320.0)
             # print("EXITING OBSTACLE LOOP")
 
-            
+
             if laser < 5:
                 minimum_dist = 3.0
             speed = minimum_dist/10.0
@@ -281,24 +281,6 @@ class ApproachbinService(BaseApproachClass):
             rospy.sleep(0.05)
 
 
-    def laser_mean(self):
-        """
-        Return the average distance from +- 30 deg from the center of the laser
-        """
-        laser = rospy.wait_for_message("laser/scan", LaserScan)
-        _val = 0
-        _ind = 0
-        for i in laser.ranges[20:80]:
-            if not np.isinf(i):
-                _val += i
-                _ind += 1
-        if _ind != 0:
-            range = _val/_ind
-            if print_to_terminal:
-                print("Laser Range: {}".format(range))
-            return range
-        else:
-            return 0.0
 
     def face_regolith(self):
         """
@@ -340,19 +322,6 @@ class ApproachbinService(BaseApproachClass):
             rospy.sleep(0.05)
         print("*******BIN RESET")
 
-
-
-    def toggle_light(self, value):
-        """
-        Service to toggle the lights with float value from zero to one
-        as the light internsity (0 being off and 1 high beam)
-        """
-        rospy.wait_for_service('spot_light')
-        toggle_light_call = rospy.ServiceProxy('spot_light', SpotLightSrv)
-        try:
-            toggle_light_call = toggle_light_call(float(value))
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
 
     def shutdown(self):
         """

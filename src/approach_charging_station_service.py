@@ -207,23 +207,6 @@ class ApproachChargingStationService(BaseApproachClass):
         self.stop()
         return self.laser_mean(), True
 
-    def object_distance_estimation(self, object):
-        """
-        Estimate distance from arg object to the camera of the robot.
-        Requires disparity image
-        """
-        rospy.wait_for_service('object_estimation') #Change the name of the service
-        object_estimation_call = rospy.ServiceProxy('object_estimation', ObjectEstimation)
-        try:
-            object_distance = object_estimation_call(object, self.disparity)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-        return(object_distance)
-
-
-
-
-
 
     def face_base(self):
         """
