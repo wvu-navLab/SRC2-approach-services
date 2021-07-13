@@ -1,4 +1,5 @@
 std_msgs/Bool approach_excavator
+std_msgs/Float64 distance_threshold
 ---
 std_msgs/Float64 range
 std_msgs/Bool success

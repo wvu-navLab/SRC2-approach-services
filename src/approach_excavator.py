@@ -62,6 +62,7 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         """
         rospy.on_shutdown(self.shutdown)
+        self.distance_threshold = LASER_CLOSE_RANGE
         self.rover = False
         self.robot_name = rospy.get_param('robot_name')
         print(self.robot_name)
@@ -165,6 +166,11 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         Service for approaching the excavator in the SRC qualification
         """
+        if req.distance_threshold.data != -1:
+            self.distance_threshold = req.distance_threshold.data
+        else:
+            self.distance_threshold = LASER_CLOSE_RANGE
+        
         rospy.loginfo("Aprroach Excavator Service Started")
         self.image_subscriber() # start subscriber
         response = self.search_for_excavator()
@@ -270,7 +276,7 @@ class ApproachExcavatorService(BaseApproachClass):
             turning_offset = 0.0
             rotation_speed = (-x_mean_base/840+turning_offset+0.5*turning_offset_i)
 
-            if laser < LASER_CLOSE_RANGE and laser != 0.0:
+            if laser < self.distance_threshold and laser != 0.0:
                 print("Approached to target Laser Range. Stopping.")
                 self.stop()
                 break
