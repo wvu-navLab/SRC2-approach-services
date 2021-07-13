@@ -2,7 +2,7 @@
 
 <launch>
 
-    <node name="approach_excavator_node" pkg="src2_approach_services" type="approach_excavator.py" output="screen"  launch-prefix="xterm -e">
+    <node name="approach_excavator_node" pkg="src2_approach_services" type="approach_excavator.py" output="screen" >
     </node>
 
 </launch>
