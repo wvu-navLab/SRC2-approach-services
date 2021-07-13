@@ -168,7 +168,7 @@ class ApproachChargingStationService(BaseApproachClass):
             self.check_for_rover(self.boxes.boxes)
             if self.rover_boxes:
                 for object_ in self.rover_boxes:
-                    dist = self.object_distance_estimation(object_)
+                    dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
                     if dist < 6.0:
                         rospy.sleep(10)
