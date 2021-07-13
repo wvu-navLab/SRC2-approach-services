@@ -175,6 +175,17 @@ class ApproachbinService(BaseApproachClass):
         while True:
             # print("INSIDE WHILE LOOP")
             self.check_for_bin(self.boxes.boxes)
+
+            # Check for Rover
+            self.check_for_rover(self.boxes.boxes)
+            if rover_boxes:
+                for object_ in rover_boxes:
+                    dist = self.object_distance_estimation(object_)
+                    self.check_for_rover(self.boxes.boxes)
+                    if dist < 6.0:
+                        rospy.sleep(10)
+
+
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             minimum_dist = 10
             turning_offset = 0.0
@@ -193,6 +204,7 @@ class ApproachbinService(BaseApproachClass):
                 rospy.logerr("Timeout in approach bin service")
                 print("TIMEOUT !! in approach bin service")
                 return 0.0, False
+
             # for obstacle_ in self.obstacles:
             #     print("ENTERING OBSTACLE LOOP")
             #     obstacle_mean_ = float(obstacle_.obstacle.xmin+obstacle_.obstacle.xmax)/2.0-320
@@ -204,6 +216,8 @@ class ApproachbinService(BaseApproachClass):
             #             turning_offset += np.sign(obstacle_mean_)*0.3 * \
             #                 (1-np.abs(obstacle_mean_)/320.0)
             # print("EXITING OBSTACLE LOOP")
+
+            
             if laser < 5:
                 minimum_dist = 3.0
             speed = minimum_dist/10.0
@@ -234,9 +248,9 @@ class ApproachbinService(BaseApproachClass):
         self.hauler_dump(1.57) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
         rospy.sleep(10)
         self.hauler_dump(3.14)
-        self.stop() 
+        self.stop()
         self.hauler_bin_reset(0.0)
-        
+
         self.stop()
         return self.laser_mean(), True
 
@@ -250,19 +264,6 @@ class ApproachbinService(BaseApproachClass):
         for i in range(2):
             _cmd_publisher.publish(_cmd_message)
             rospy.sleep(0.05)
-
-    def object_distance_estimation(self, object):
-        """
-        Estimate distance from arg object to the camera of the robot.
-        Requires disparity image
-        """
-        rospy.wait_for_service('object_estimation')  # Change the name of the service
-        object_estimation_call = rospy.ServiceProxy('object_estimation', ObjectEstimation)
-        try:
-            object_distance = object_estimation_call(object, self.disparity)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-        return(object_distance)
 
     def drive(self, speed, heading):
         """
@@ -279,40 +280,6 @@ class ApproachbinService(BaseApproachClass):
             _cmd_publisher.publish(_cmd_message)
             rospy.sleep(0.05)
 
-    def stop(self):
-        """
-        Stop the rover sending zeros cmd velocity
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=1)
-        _cmd_message = Twist()
-        _cmd_publisher.publish(_cmd_message)
-        _cmd_publisher.publish(_cmd_message)
-
-    def check_for_bin(self, boxes):
-        """
-        Check if bin exist in the bounding boxes
-        """
-        for box in boxes:
-            if box.id == 6: # bin id == 6 -- regolith id == 12
-                self.rover = box
-
-
-    def check_for_regolith(self, boxes):
-        """
-        check for grey regolith above bin to perform alignment (face_regolith)
-        """
-        for box in boxes:
-            if box.id == 12: # bin id == 6 -- regolith id == 12
-                self.rover = box
-
-    def check_for_obstacles(self, boxes):
-        """
-        Check if obstacles exist in the bounding boxes
-        """
-        self.obstacle_boxes = []
-        for box in boxes:
-            if box.id == 5:
-                self.obstacle_boxes.append(box)
 
     def laser_mean(self):
         """

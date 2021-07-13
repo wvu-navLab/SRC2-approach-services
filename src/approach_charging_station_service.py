@@ -162,6 +162,18 @@ class ApproachChargingStationService(BaseApproachClass):
 
         while True:
             self.check_for_base_station(self.boxes.boxes)
+
+
+            # Check for Rover
+            self.check_for_rover(self.boxes.boxes)
+            if rover_boxes:
+                for object_ in rover_boxes:
+                    dist = self.object_distance_estimation(object_)
+                    self.check_for_rover(self.boxes.boxes)
+                    if dist < 6.0:
+                        rospy.sleep(10)
+
+
             x_mean_base = float(self.base.xmin+self.base.xmax)/2.0-320
             minimum_dist = 10
             turning_offset = 0.0
@@ -209,22 +221,7 @@ class ApproachChargingStationService(BaseApproachClass):
         return(object_distance)
 
 
-    def check_for_base_station(self,boxes):
-        """
-        Check if base station exist in the bounding boxes
-        """
-        for box in boxes:
-            if box.id == 1:
-                self.base = box
 
-    def check_for_obstacles(self,boxes):
-        """
-        Check if obstacles exist in the bounding boxes
-        """
-        self.obstacle_boxes = []
-        for box in boxes:
-            if box.id == 5:
-                self.obstacle_boxes.append(box)
 
 
 

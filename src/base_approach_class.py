@@ -144,6 +144,40 @@ class BaseApproachClass:
             if box.id == 5:
                 self.obstacle_boxes.append(box)
 
+    def check_for_rover(self, boxes):
+        """
+        Check if obstacles exist in the bounding boxes
+        """
+        self.rover_boxes = []
+        for box in boxes:
+            if box.id == 2 or box.id == 3 or box.id == 4:
+                self.rover_boxes.append(box)
+
+    def check_for_bin(self, boxes):
+        """
+        Check if bin exist in the bounding boxes
+        """
+        for box in boxes:
+            if box.id == 6: # bin id == 6 -- regolith id == 12
+                self.rover = box
+
+
+    def check_for_regolith(self, boxes):
+        """
+        check for grey regolith above bin to perform alignment (face_regolith)
+        """
+        for box in boxes:
+            if box.id == 12: # bin id == 6 -- regolith id == 12
+                self.rover = box
+
+    def check_for_base_station(self,boxes):
+        """
+        Check if base station exist in the bounding boxes
+        """
+        for box in boxes:
+            if box.id == 1:
+                self.base = box                
+
     def laser_mean(self):
         """
         Return the average distance from +- 30 deg from the center of the laser
