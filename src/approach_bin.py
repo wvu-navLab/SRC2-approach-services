@@ -178,8 +178,8 @@ class ApproachbinService(BaseApproachClass):
 
             # Check for Rover
             self.check_for_rover(self.boxes.boxes)
-            if rover_boxes:
-                for object_ in rover_boxes:
+            if self.rover_boxes:
+                for object_ in self.rover_boxes:
                     dist = self.object_distance_estimation(object_)
                     self.check_for_rover(self.boxes.boxes)
                     if dist < 6.0:
