@@ -213,7 +213,7 @@ class ApproachExcavatorService(BaseApproachClass):
         _yaw = self.face_excavator_mast_camera_yaw()
         _pitch = self.face_excavator_mast_camera_pitch()
         print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
-        _point = over_point_estimation
+        _point = self.rover_point_estimation()
 
         response = ApproachExcavatorResponse()
         resp = Bool()
