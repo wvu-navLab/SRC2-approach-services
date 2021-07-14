@@ -218,9 +218,6 @@ class ApproachExcavatorService(BaseApproachClass):
         excavator_range.data = float(_range)
         response.range = excavator_range
 
-        self.mast_camera_publisher_yaw.publish(0)
-        self.mast_camera_publisher_pitch.publish(0)
-        rospy.sleep(3.0)
         if search == True:
             rospy.loginfo("Camera Based Rover approached")
             _yaw = self.face_excavator_mast_camera_yaw()
@@ -230,6 +227,9 @@ class ApproachExcavatorService(BaseApproachClass):
             response.point = _point
         else:
             rospy.logerr("Excavator was not found when running turn in place maneuver or timeout")
+        self.mast_camera_publisher_yaw.publish(0)
+        self.mast_camera_publisher_pitch.publish(0)
+        rospy.sleep(3.0)
         self.rover = False  # reset flag variable
         return response
 
