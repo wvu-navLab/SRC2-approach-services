@@ -384,10 +384,11 @@ class ApproachExcavatorService(BaseApproachClass):
 
         object_point = self.rover_distance_estimation(smaller_bounding_box)
         print("Point before transform: {}".format(object_point.point))
+        _point = object_point.point
         #_point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)
-        tf_buf = tf2_ros.Buffer()
-        tf_listener = tf2_ros.TransformListener(tf_buf)
-        _point = tf_buf.transform(object_point.point, self.robot_name+"_odom")
+        #tf_buf = tf2_ros.Buffer()
+        #tf_listener = tf2_ros.TransformListener(tf_buf)
+        #_point = tf_buf.transform(object_point.point, self.robot_name+"_odom")
         print("POINT: {}".format(_point))
         print("POINT: {}".format(_point))
         return(_point)
