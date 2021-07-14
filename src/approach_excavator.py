@@ -10,7 +10,6 @@ from std_msgs.msg import Float64
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
-from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
@@ -28,11 +27,12 @@ from base_approach_class import BaseApproachClass
 import message_filters  # for sincronizing time
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
-import tf
 from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
 
+import tf2_ros
+from tf2_geometry_msgs import PointStamped
 
 print_to_terminal = rospy.get_param('approach_excavator/print_to_terminal', True)
 ROVER_MIN_VEL = rospy.get_param('approach_excavator/rover_min_vel', 0.8)
@@ -210,11 +210,6 @@ class ApproachExcavatorService(BaseApproachClass):
             rospy.sleep(0.05)
         self.stop()
 
-        _yaw = self.face_excavator_mast_camera_yaw()
-        _pitch = self.face_excavator_mast_camera_pitch()
-        print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
-        _point = self.rover_point_estimation()
-
         response = ApproachExcavatorResponse()
         resp = Bool()
         resp.data = search
@@ -222,13 +217,17 @@ class ApproachExcavatorService(BaseApproachClass):
         excavator_range = Float64()
         excavator_range.data = float(_range)
         response.range = excavator_range
-        response.point = _point
 
         self.mast_camera_publisher_yaw.publish(0)
         self.mast_camera_publisher_pitch.publish(0)
-        rospy.sleep(10.0)
+        rospy.sleep(3.0)
         if search == True:
             rospy.loginfo("Camera Based Rover approached")
+            _yaw = self.face_excavator_mast_camera_yaw()
+            _pitch = self.face_excavator_mast_camera_pitch()
+            print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
+            _point = self.rover_point_estimation()
+            response.point = _point
         else:
             rospy.logerr("Excavator was not found when running turn in place maneuver or timeout")
         self.rover = False  # reset flag variable
@@ -382,9 +381,13 @@ class ApproachExcavatorService(BaseApproachClass):
         smaller_bounding_box.xmax = int(self.rover.xmax - (self.rover.xmax - self.rover.xmin)*0.2)
         smaller_bounding_box.ymin = int(self.rover.ymin + (self.rover.ymax - self.rover.ymin)*0.2)
         smaller_bounding_box.ymax = int(self.rover.ymax - (self.rover.ymax - self.rover.ymin)*0.2)
+
         object_point = self.rover_distance_estimation(smaller_bounding_box)
         print("Point before transform: {}".format(object_point.point))
-        _point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)
+        #_point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)
+        tf_buf = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buf)
+        _point = tf_buf.transform(object_point.point, self.robot_name+"_odom")
         print("POINT: {}".format(_point))
         print("POINT: {}".format(_point))
         return(_point)
