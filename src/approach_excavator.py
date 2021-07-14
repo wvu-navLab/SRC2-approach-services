@@ -10,11 +10,13 @@ from std_msgs.msg import Float64
 
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
+from src2_object_detection.srv import DistanceEstimation, DistanceEstimationResponse
 from src2_object_detection.srv import FindObject, FindObjectResponse
 from src2_approach_services.srv import ApproachExcavator, ApproachExcavatorResponse
 from stereo_msgs.msg import DisparityImage
@@ -22,12 +24,11 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import LaserScan
 from srcp2_msgs.srv import LocalizationSrv, SpotLightSrv  # AprioriLocationSrv,
-
 from base_approach_class import BaseApproachClass
-
 import message_filters  # for sincronizing time
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
+import tf
 from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
@@ -69,6 +70,9 @@ class ApproachExcavatorService(BaseApproachClass):
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
+        self.mast_camera_publisher_yaw = rospy.Publisher("/small_hauler_1/sensor/yaw/command/position", Float64, queue_size = 10 )
+        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
+
         rospy.sleep(2)
         rospy.loginfo("Approach Excavator service node is running")
         s = rospy.Service('approach_excavator_service', ApproachExcavator,
@@ -142,7 +146,7 @@ class ApproachExcavatorService(BaseApproachClass):
         for i in range(1):
             _cmd_publisher.publish(_cmd_message)
             rospy.sleep(0.05)
-  
+
     def laser_mean(self):
         """
         Return the average distance from +- 30 deg from the center of the laser
@@ -170,7 +174,7 @@ class ApproachExcavatorService(BaseApproachClass):
             self.distance_threshold = req.distance_threshold.data
         else:
             self.distance_threshold = LASER_CLOSE_RANGE
-        
+
         rospy.loginfo("Aprroach Excavator Service Started")
         self.image_subscriber() # start subscriber
         response = self.search_for_excavator()
@@ -205,6 +209,12 @@ class ApproachExcavatorService(BaseApproachClass):
                 break
             rospy.sleep(0.05)
         self.stop()
+
+        _yaw = self.face_excavator_mast_camera_yaw()
+        _pitch = self.face_excavator_mast_camera_pitch()
+        print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
+        _point = over_point_estimation
+
         response = ApproachExcavatorResponse()
         resp = Bool()
         resp.data = search
@@ -212,12 +222,17 @@ class ApproachExcavatorService(BaseApproachClass):
         excavator_range = Float64()
         excavator_range.data = float(_range)
         response.range = excavator_range
+        response.point = _point
         if search == True:
-            rospy.loginfo("Rover approached Excavator")
+            rospy.loginfo("Camera Based Rover approached")
         else:
             rospy.logerr("Excavator was not found when running turn in place maneuver or timeout")
         self.rover = False  # reset flag variable
         return response
+
+
+
+
 
     def approach_excavator(self):
         """
@@ -267,7 +282,7 @@ class ApproachExcavatorService(BaseApproachClass):
             #     minimum_dist = 3.0
             # if laser < 10.0:
             #     minimum_dist = ROVER_MIN_VEL*10
-            # speed = minimum_dist/10.0  
+            # speed = minimum_dist/10.0
 
 
             speed = ROVER_MIN_VEL
@@ -331,7 +346,7 @@ class ApproachExcavatorService(BaseApproachClass):
             #         print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m")
             #         self.stop()
             #         break
-                
+
         print("Close to Excavator")
         self.stop()
         return self.laser_mean(), True
@@ -359,6 +374,72 @@ class ApproachExcavatorService(BaseApproachClass):
             if np.abs(x_mean) < 200:
                 break
 
+    def face_excavator_mast_camera_yaw(self):
+        """
+        Centralize the rover on the image on the x direction by turning the camera around the z axis
+        """
+        camera_yaw = 0.0
+        self.check_for_excavator(self.boxes.boxes)
+        x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+        while x_mean not in range(-20,20):
+            if x_mean >0:
+                camera_yaw -= 0.1
+            else:
+                camera_yaw += 0.1
+            print("XMEAN: {}".format(x_mean))
+            self.check_for_excavator(self.boxes.boxes)
+            x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+            self.mast_camera_publisher_yaw.publish(camera_yaw)
+            rospy.sleep(0.3)
+        return camera_yaw
+
+    def face_excavator_mast_camera_pitch(self):
+        """
+        Centralize the rover on the image in the y direction by turning the camera around the y axis
+
+        """
+        camera_pitch = 0.0
+        self.check_for_excavator(self.boxes.boxes)
+        y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
+        while y_mean not in range(-20,20):
+            if y_mean >0:
+                camera_pitch -= 0.1
+            else:
+                camera_pitch += 0.1
+            print("YMEAN: {}".format(y_mean))
+            self.check_for_excavator(self.boxes.boxes)
+            y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
+            self.mast_camera_publisher_pitch.publish(camera_pitch)
+            rospy.sleep(0.3)
+        return camera_pitch
+
+    def rover_point_estimation(self):
+        self.check_for_excavator(self.boxes.boxes)
+        smaller_bounding_box = self.rover
+        smaller_bounding_box.xmin = self.rover.xmin + (self.rover.xmax - self.rover.xmin)*0.2
+        smaller_bounding_box.xmax = self.rover.xmax - (self.rover.xmax - self.rover.xmin)*0.2
+        smaller_bounding_box.ymin = self.rover.ymin + (self.rover.ymax - self.rover.ymin)*0.2
+        smaller_bounding_box.ymax = self.rover.ymax - (self.rover.ymax - self.rover.ymin)*0.2
+        object_point = self.rover_distance_estimation(smaller_bounding_box)
+        print("Point before transform: {}".format(object_point.point))
+        _point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)
+        print("POINT: {}".format(_point))
+        print("POINT: {}".format(_point))
+        return(_point)
+
+
+    def rover_distance_estimation(self, object):
+        """
+        Estimate distance from arg object to the camera of the robot.
+        Requires disparity image
+        """
+        rospy.wait_for_service('distance_estimation') #Change the name of the service
+        distance_estimation_call = rospy.ServiceProxy('distance_estimation', DistanceEstimation)
+        try:
+            object_distance = distance_estimation_call(object, self.disparity)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+        return(object_distance)
 
     def shutdown(self):
         """
@@ -372,7 +453,7 @@ class ApproachExcavatorService(BaseApproachClass):
 def main():
     try:
         rospy.init_node('approach_excavator', anonymous=True)
-        object_estimation_service_call = ApproachExcavatorService()
+        approach_excavator_service = ApproachExcavatorService()
     except rospy.ROSInterruptException:
         pass
 
