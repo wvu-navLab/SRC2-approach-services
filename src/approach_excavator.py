@@ -361,9 +361,9 @@ class ApproachExcavatorService(BaseApproachClass):
         y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
         while y_mean not in range(-20,20):
             if y_mean >0:
-                camera_pitch -= 0.1
-            else:
                 camera_pitch += 0.1
+            else:
+                camera_pitch -= 0.1
             print("YMEAN: {}".format(y_mean))
             self.check_for_excavator(self.boxes.boxes)
             y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
