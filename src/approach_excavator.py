@@ -223,6 +223,10 @@ class ApproachExcavatorService(BaseApproachClass):
         excavator_range.data = float(_range)
         response.range = excavator_range
         response.point = _point
+
+        self.mast_camera_publisher_yaw.publish(0)
+        self.mast_camera_publisher_pitch.publish(0)
+
         if search == True:
             rospy.loginfo("Camera Based Rover approached")
         else:
@@ -241,49 +245,36 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         print("START approach_excavator")
         turning_offset_i = 0.0
-
         while rospy.get_time() == 0:
             rospy.get_time()
-
         init_time = rospy.get_time()
-
         toggle_light_ = 1
-
         print("ENTERING WHILE LOOP")
-
         while True:
             print("INSIDE WHILE LOOP")
-
             curr_time = rospy.get_time()
             if curr_time - init_time > APPROACH_TIMEOUT:
                 rospy.logerr("Timeout in approach excavator service")
                 print("TIMEOUT !! in approach excavator service")
                 return 0.0, False
-
             if toggle_light_ == 1:
                 self.toggle_light(10)
                 toggle_light_ = 0
             else:
                 self.toggle_light(0)
                 toggle_light_ = 1
-
             self.check_for_excavator(self.boxes.boxes)
-
             laser = self.laser_mean()
-
             print("Distance Inference")
             print(self.object_distance_estimation(self.rover).object_position.point.z)
-
             print("Distance Laser")
             print(laser)
-
             # minimum_dist = 10
             # if laser < 5.0:
             #     minimum_dist = 3.0
             # if laser < 10.0:
             #     minimum_dist = ROVER_MIN_VEL*10
             # speed = minimum_dist/10.0
-
 
             speed = ROVER_MIN_VEL
 
@@ -313,41 +304,6 @@ class ApproachExcavatorService(BaseApproachClass):
                 print("Base speed : ", speed)
                 print("Base rotational speed : ", rotation_speed)
                 self.drive(speed, rotation_speed)
-                # (self.rover.xmax-self.rover.xmin) > 200
-
-            # for obstacle_ in self.obstacles:
-            #     print("ENTERING OBSTACLE LOOP")
-            #     obstacle_mean_ = float(obstacle_.obstacle.xmin+obstacle_.obstacle.xmax)/2.0-320
-            #     turning_offset_i = turning_offset
-            #     if obstacle_.distance > 0.1:
-            #         if obstacle_.distance < minimum_dist:
-            #             minimum_dist = obstacle_.distance
-            #         if obstacle_.distance < 8:
-            #             turning_offset += np.sign(obstacle_mean_)*0.3 * \
-            #                 (1-np.abs(obstacle_mean_)/320.0)
-            # print("EXITING OBSTACLE LOOP")
-
-            # print("SPEED : ", speed)
-            # rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
-            # print("ENTERING DRIVE")
-            # self.drive(speed, rotation_speed)
-            # print("Distance Inference")
-            # print(self.object_distance_estimation(self.rover).object_position.point.z)
-            # print("Distance Laser")
-            # print(laser)
-            # # (self.rover.xmax-self.rover.xmin) > 200
-            # if laser < LASER_RANGE and laser != 0.0:
-            #     self.stop()
-            #     self.face_excavator()
-            #     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
-            #     print("******DOING SLOW/CLOSE EXCAVATOR APPROACH********")
-            #     self.drive(speed/4, 0.0)
-            #     if laser < LASER_RANGE/2 and laser !=0.0:
-            #         print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m")
-            #         self.stop()
-            #         break
-        self.mast_camera_publisher_yaw.publish(0)
-        self.mast_camera_publisher_pitch.publish(0)
 
         print("Close to Excavator")
         self.stop()
@@ -416,6 +372,10 @@ class ApproachExcavatorService(BaseApproachClass):
         return camera_pitch
 
     def rover_point_estimation(self):
+        """
+        Estimate the median distance of the rover from a reduced bounding box
+        Bounding box redeuced in 64% area
+        """
         self.check_for_excavator(self.boxes.boxes)
         smaller_bounding_box = self.rover
         smaller_bounding_box.xmin = self.rover.xmin + (self.rover.xmax - self.rover.xmin)*0.2
