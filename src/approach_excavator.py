@@ -346,6 +346,8 @@ class ApproachExcavatorService(BaseApproachClass):
             #         print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m")
             #         self.stop()
             #         break
+        self.mast_camera_publisher_yaw.publish(0)
+        self.mast_camera_publisher_pitch.publish(0)
 
         print("Close to Excavator")
         self.stop()
