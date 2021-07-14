@@ -220,11 +220,12 @@ class ApproachExcavatorService(BaseApproachClass):
 
         if search == True:
             rospy.loginfo("Camera Based Rover approached")
-            _yaw = self.face_excavator_mast_camera_yaw()
-            _pitch = self.face_excavator_mast_camera_pitch()
-            print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
-            _point = self.rover_point_estimation()
-            response.point = _point
+            #_yaw = self.face_excavator_mast_camera_yaw()
+            #_pitch = self.face_excavator_mast_camera_pitch()
+            #print("Yaw and Pitch: {},{}".format(_yaw,_pitch))
+            #_point = self.rover_point_estimation()
+            #response.point = _point
+            response.point = PointStamped()
         else:
             rospy.logerr("Excavator was not found when running turn in place maneuver or timeout")
         self.mast_camera_publisher_yaw.publish(0)
