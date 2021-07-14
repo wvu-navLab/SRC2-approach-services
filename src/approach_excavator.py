@@ -116,7 +116,7 @@ class ApproachExcavatorService(BaseApproachClass):
             _find_object = _find_object(robot_name = self.robot_name)
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
-        print(_find_object)
+        #print(_find_object)
         self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
@@ -226,7 +226,7 @@ class ApproachExcavatorService(BaseApproachClass):
 
         self.mast_camera_publisher_yaw.publish(0)
         self.mast_camera_publisher_pitch.publish(0)
-
+        rospy.sleep(10.0)
         if search == True:
             rospy.loginfo("Camera Based Rover approached")
         else:
@@ -378,10 +378,10 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         self.check_for_excavator(self.boxes.boxes)
         smaller_bounding_box = self.rover
-        smaller_bounding_box.xmin = self.rover.xmin + (self.rover.xmax - self.rover.xmin)*0.2
-        smaller_bounding_box.xmax = self.rover.xmax - (self.rover.xmax - self.rover.xmin)*0.2
-        smaller_bounding_box.ymin = self.rover.ymin + (self.rover.ymax - self.rover.ymin)*0.2
-        smaller_bounding_box.ymax = self.rover.ymax - (self.rover.ymax - self.rover.ymin)*0.2
+        smaller_bounding_box.xmin = int(self.rover.xmin + (self.rover.xmax - self.rover.xmin)*0.2)
+        smaller_bounding_box.xmax = int(self.rover.xmax - (self.rover.xmax - self.rover.xmin)*0.2)
+        smaller_bounding_box.ymin = int(self.rover.ymin + (self.rover.ymax - self.rover.ymin)*0.2)
+        smaller_bounding_box.ymax = int(self.rover.ymax - (self.rover.ymax - self.rover.ymin)*0.2)
         object_point = self.rover_distance_estimation(smaller_bounding_box)
         print("Point before transform: {}".format(object_point.point))
         _point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)

@@ -2,11 +2,7 @@
 
 <launch>
 
-<<<<<<< HEAD
-    <node name="approach_excavator_node" pkg="src2_approach_services" type="approach_excavator.py" output="screen" launch-prefix="xterm -e">
-=======
     <node name="approach_excavator_node" pkg="src2_approach_services" type="approach_excavator.py" output="screen" launch-prefix="xterm -e" >
->>>>>>> 36ea7d5a2703a918b3bfbb2cb280f166f80bf8dc
     </node>
 
 </launch>
