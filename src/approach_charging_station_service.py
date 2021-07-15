@@ -117,13 +117,19 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         Turn in place to check for base station
         """
-        search = False
         _range = 0.0
-        for i in range(150):
-            self.turn_in_place(-1)
+        search = False
+        self.check_for_base_station(self.boxes.boxes)
+        toggle_light_ = 1
+
+
+        if self.base: #try in front
+            print("Charging station found first time")
+            self.base = False
+            rospy.sleep(0.5)
             self.check_for_base_station(self.boxes.boxes)
             if self.base:
-                print("Base Station found")
+                print("Charging station found second time")
                 if print_to_terminal:
                     print(self.base)
                 self.stop()
@@ -134,7 +140,42 @@ class ApproachChargingStationService(BaseApproachClass):
                 if search == True:
                     self.face_base()
                 self.stop()
-                break
+
+        else:        #else turn in place
+            for i in range(150):
+
+                if toggle_light_ == 1:
+                    self.toggle_light(10)
+                    toggle_light_ = 0
+                else:
+                    self.toggle_light(0)
+                    toggle_light_ = 1
+
+                self.turn_in_place(-1)
+                self.check_for_base_station(self.boxes.boxes)
+
+                if self.base: #try in front
+                    print("Charging station found first time")
+                    self.base = False
+                    rospy.sleep(0.5)
+                    self.check_for_base_station(self.boxes.boxes)
+
+                    if self.base:
+                        print("Charging station found second time")
+                        if print_to_terminal:
+                            print(self.base)
+                        self.stop()
+                        _range, search = self.approach_base_station()
+                        if print_to_terminal:
+                            print("Rover approach to base station was: {}"
+                                "and the laser distance is {}".format(search, _range))
+                        if search == True:
+                            self.face_base()
+                        self.stop()
+                        break
+                rospy.sleep(0.05)
+        self.stop()
+
         response = ApproachChargingStationResponse()
         resp = Bool()
         resp.data = search
@@ -213,7 +254,16 @@ class ApproachChargingStationService(BaseApproachClass):
         Service to align the rover to the base station using
         bounding boxes from inference node
         """
+        while rospy.get_time() == 0:
+            rospy.get_time()
+        init_time = rospy.get_time()
+
         while True:
+            curr_time = rospy.get_time() # Timeout break:
+            if curr_time - init_time > APPROACH_TIMEOUT:
+                rospy.logerr("Timeout in FACE BASE ")
+                break
+
             self.check_for_base_station(self.boxes.boxes)
             x_mean = float(self.base.xmin+self.base.xmax)/2.0-320
             if print_to_terminal:

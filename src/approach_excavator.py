@@ -69,6 +69,7 @@ class ApproachExcavatorService(BaseApproachClass):
         print(self.robot_name)
         self.obstacles = []
         self.timeout = 60
+        self.camera_pitch = 0.0
         self.boxes = DetectedBoxes()
         self.mast_camera_publisher_yaw = rospy.Publisher("/small_hauler_1/sensor/yaw/command/position", Float64, queue_size = 10 )
         self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
@@ -387,13 +388,13 @@ class ApproachExcavatorService(BaseApproachClass):
 
         """
         y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
-        if y_mean >0 and camera_pitch < 0.5:
-            camera_pitch += 0.02
-        elif y_mean<0 and camera_pitch > -0.5:
-            camera_pitch -= 0.02
+        if y_mean >0 and self.camera_pitch < 0.5:
+            self.camera_pitch += 0.02
+        elif y_mean<0 and self.camera_pitch > -0.5:
+            self.camera_pitch -= 0.02
         print("YMEAN: {}".format(y_mean))
-        self.mast_camera_publisher_pitch.publish(camera_pitch)
-        return camera_pitch
+        self.mast_camera_publisher_pitch.publish(self.camera_pitch)
+        return self.camera_pitch
 
     def rover_point_estimation(self):
         """
