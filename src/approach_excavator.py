@@ -119,52 +119,10 @@ class ApproachExcavatorService(BaseApproachClass):
         #print(_find_object)
         self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
-        for obstacle in self.obstacle_boxes:
+        for obstacle in self.obstacle_boxes:  #  THERE IS A LIST OF OBSTACLES HERE WITH DISTANCE FOR EACH ONE IF WE WANT TO USE
             dist = self.object_distance_estimation(obstacle)
             self.obstacles.append(Obstacle(obstacle,dist.object_position.point.z))
 
-    def stop(self):
-        """
-        Stop the rover sending zeros cmd velocity
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
-        _cmd_message = Twist()
-        for i in range(1):
-            _cmd_publisher.publish(_cmd_message)
-
-    def drive(self,speed, heading):
-        """
-        Drive function, send args to the cmd velocity topic
-        Args:
-        speed: linear x velocity of the robot
-        heading: angular z velocity of the robot
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
-        _cmd_message = Twist()
-        _cmd_message.linear.x = speed
-        _cmd_message.angular.z = heading
-        for i in range(1):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-    def laser_mean(self):
-        """
-        Return the average distance from +- 30 deg from the center of the laser
-        """
-        laser = rospy.wait_for_message("laser/scan", LaserScan)
-        _val = 0
-        _ind = 0
-        for i in laser.ranges[0:99]:
-            if not np.isinf(i) and i < LASER_THRES:
-                _val+=i
-                _ind+=1
-        if _ind != 0:
-            range = _val/_ind
-            if print_to_terminal:
-                print("Laser Range: {}".format(range))
-            return range
-        else:
-            return 0.0
 
     def approach_excavator_handle(self, req):
         """
@@ -186,11 +144,19 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         Turn in place to check for excavator
         """
+        #Change logic to count to 2 - also face in front first
         _range = 0.0
         search = False
         self.command_laser(0)
-        for i in range(150):
-            self.turn_in_place(-1)
+        rospy.sleep(0.1)
+        self.check_for_excavator(self.boxes.boxes)
+        toggle_light_ = 1
+
+
+        if self.rover: #try in front
+            print("Excavator found first time")
+            self.rover = False
+            rospy.sleep(0.5)
             self.check_for_excavator(self.boxes.boxes)
             if self.rover:
                 print("Excavator found")
@@ -206,8 +172,40 @@ class ApproachExcavatorService(BaseApproachClass):
                 if search == True:
                     self.face_excavator()
                 self.stop()
-                break
-            rospy.sleep(0.05)
+
+        else:        #else turn in place
+            for i in range(150):
+
+                if toggle_light_ == 1:
+                    self.toggle_light(10)
+                    toggle_light_ = 0
+                else:
+                    self.toggle_light(0)
+                    toggle_light_ = 1
+
+                self.turn_in_place(-1)
+                self.check_for_excavator(self.boxes.boxes)
+                if self.rover:
+                    print("Excavator found first time")
+                    self.rover = False
+                    rospy.sleep(0.5)
+                    self.check_for_excavator(self.boxes.boxes)
+                    if self.rover:
+                        print("Excavator found second time - Do rest of the steps")
+                        if print_to_terminal:
+                            print(self.rover)
+                        self.stop()
+                        self.command_laser(0.05)
+                        _range, search = self.approach_excavator()
+                        self.command_laser(0)
+                        if print_to_terminal:
+                            print("Rover approach to excavator was: {}"
+                            "and the laser distance is {}".format(search, _range))
+                        if search == True:
+                            self.face_excavator()
+                            self.stop()
+                        break
+                        rospy.sleep(0.05)
         self.stop()
 
         response = ApproachExcavatorResponse()
@@ -228,9 +226,9 @@ class ApproachExcavatorService(BaseApproachClass):
             response.point = PointStamped()
         else:
             rospy.logerr("Excavator was not found when running turn in place maneuver or timeout")
-        self.mast_camera_publisher_yaw.publish(0)
-        self.mast_camera_publisher_pitch.publish(0)
-        rospy.sleep(3.0)
+        #self.mast_camera_publisher_yaw.publish(0)
+        #self.mast_camera_publisher_pitch.publish(0)
+        #rospy.sleep(3.0)
         self.rover = False  # reset flag variable
         return response
 
@@ -243,38 +241,44 @@ class ApproachExcavatorService(BaseApproachClass):
         Visual approach the excavator,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
-        print("START approach_excavator")
+        print("Start approach excavator maneuver")
         turning_offset_i = 0.0
         while rospy.get_time() == 0:
             rospy.get_time()
         init_time = rospy.get_time()
         toggle_light_ = 1
-        print("ENTERING WHILE LOOP")
+
         while True:
-            print("INSIDE WHILE LOOP")
             curr_time = rospy.get_time()
             if curr_time - init_time > APPROACH_TIMEOUT:
                 rospy.logerr("Timeout in approach excavator service")
                 print("TIMEOUT !! in approach excavator service")
                 return 0.0, False
+
             if toggle_light_ == 1:
                 self.toggle_light(10)
                 toggle_light_ = 0
             else:
                 self.toggle_light(0)
                 toggle_light_ = 1
+
             self.check_for_excavator(self.boxes.boxes)
-            laser = self.laser_mean()
+
+            #
+            _pitch = self.face_excavator_mast_camera_pitch()
+            print("Pitch angle: {}".format(_pitch))
+
+
+            median_distance = self.rover_point_estimation().point.z
+            print("Distance Median")
+            print(median_distance)
+
             print("Distance Inference")
             print(self.object_distance_estimation(self.rover).object_position.point.z)
+
+            laser = self.laser_mean()
             print("Distance Laser")
             print(laser)
-            # minimum_dist = 10
-            # if laser < 5.0:
-            #     minimum_dist = 3.0
-            # if laser < 10.0:
-            #     minimum_dist = ROVER_MIN_VEL*10
-            # speed = minimum_dist/10.0
 
             speed = ROVER_MIN_VEL
 
@@ -282,12 +286,13 @@ class ApproachExcavatorService(BaseApproachClass):
             turning_offset = 0.0
             rotation_speed = (-x_mean_base/840+turning_offset+0.5*turning_offset_i)
 
-            if laser < self.distance_threshold and laser != 0.0:
-                print("Approached to target Laser Range. Stopping.")
+
+            if median_distance < self.distance_threshold:
+                print("Approached to target (median distance). Stopping.")
                 self.stop()
                 break
-            elif laser < LASER_RANGE:
-                print("Close from target. Drive.")
+            elif median_distance < LASER_RANGE:
+                print("Closer from target. Drive.")
                 self.check_for_excavator(self.boxes.boxes)
                 x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
                 if np.abs(x_mean) >= 200:
@@ -304,6 +309,31 @@ class ApproachExcavatorService(BaseApproachClass):
                 print("Base speed : ", speed)
                 print("Base rotational speed : ", rotation_speed)
                 self.drive(speed, rotation_speed)
+
+
+
+            # if laser < self.distance_threshold and laser != 0.0:
+            #     print("Approached to target Laser Range. Stopping.")
+            #     self.stop()
+            #     break
+            # elif laser < LASER_RANGE:
+            #     print("Close from target. Drive.")
+            #     self.check_for_excavator(self.boxes.boxes)
+            #     x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+            #     if np.abs(x_mean) >= 200:
+            #         self.stop()
+            #         self.face_excavator()
+            #     else:
+            #         print("Far from target. Drive.")
+            #         print("Base speed : ", speed/4)
+            #         print("Base rotational speed : ", rotation_speed/4)
+            #         self.drive(speed/4, rotation_speed/4)
+            #         # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+            # else:
+            #     print("Far from target. Drive.")
+            #     print("Base speed : ", speed)
+            #     print("Base rotational speed : ", rotation_speed)
+            #     self.drive(speed, rotation_speed)
 
         print("Close to Excavator")
         self.stop()
@@ -322,7 +352,7 @@ class ApproachExcavatorService(BaseApproachClass):
         Service to align the rover to the excavator using
         bounding boxes from inference node
         """
-        while True:
+        while True:                     ###############REMOVE THIS LATER - CANNOT GET STUCK IN THIS THINGS!!! #######################################################################
             print("Trying to face excavator")
             self.check_for_excavator(self.boxes.boxes)
             x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
@@ -356,19 +386,13 @@ class ApproachExcavatorService(BaseApproachClass):
         Centralize the rover on the image in the y direction by turning the camera around the y axis
 
         """
-        camera_pitch = 0.0
-        self.check_for_excavator(self.boxes.boxes)
         y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
-        while y_mean not in range(-20,20):
-            if y_mean >0:
-                camera_pitch += 0.1
-            else:
-                camera_pitch -= 0.1
-            print("YMEAN: {}".format(y_mean))
-            self.check_for_excavator(self.boxes.boxes)
-            y_mean = float(self.rover.ymin+self.rover.ymax)/2.0-240
-            self.mast_camera_publisher_pitch.publish(camera_pitch)
-            rospy.sleep(0.3)
+        if y_mean >0 and camera_pitch < 0.5:
+            camera_pitch += 0.02
+        elif y_mean<0 and camera_pitch > -0.5:
+            camera_pitch -= 0.02
+        print("YMEAN: {}".format(y_mean))
+        self.mast_camera_publisher_pitch.publish(camera_pitch)
         return camera_pitch
 
     def rover_point_estimation(self):
@@ -384,14 +408,14 @@ class ApproachExcavatorService(BaseApproachClass):
         smaller_bounding_box.ymax = int(self.rover.ymax - (self.rover.ymax - self.rover.ymin)*0.2)
 
         object_point = self.rover_distance_estimation(smaller_bounding_box)
-        print("Point before transform: {}".format(object_point.point))
+        #print("Point before transform: {}".format(object_point.point))
         _point = object_point.point
         #_point = tf.TransformerROS.transformPoint(self.robot_name+"_odom", object_point.point)
         #tf_buf = tf2_ros.Buffer()
         #tf_listener = tf2_ros.TransformListener(tf_buf)
         #_point = tf_buf.transform(object_point.point, self.robot_name+"_odom")
-        print("POINT: {}".format(_point))
-        print("POINT: {}".format(_point))
+        #print("POINT: {}".format(_point))
+        #print("POINT: {}".format(_point))
         return(_point)
 
 

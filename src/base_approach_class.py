@@ -90,9 +90,8 @@ class BaseApproachClass:
         _cmd_message = Twist()
         _cmd_message.linear.x = speed
         _cmd_message.angular.z = heading
-        for i in range(5):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
+        _cmd_publisher.publish(_cmd_message)
+        rospy.sleep(0.05)
 
     def command_laser(self, pitch):
         """
@@ -104,9 +103,8 @@ class BaseApproachClass:
         _cmd_publisher = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
         _cmd_message = Float64()
         _cmd_message.data = pitch
-        for i in range(1):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
+        _cmd_publisher.publish(_cmd_message)
+        rospy.sleep(0.05)
 
     def drive_full(self, vx, vy, wz):
         """
@@ -184,8 +182,8 @@ class BaseApproachClass:
         laser = rospy.wait_for_message("laser/scan", LaserScan)
         _val = 0
         _ind = 0
-        for i in laser.ranges[20:80]:
-            if not np.isinf(i):
+        for i in laser.ranges[0:99]:
+            if not np.isinf(i) and i < LASER_THRES:
                 _val+=i
                 _ind+=1
         if _ind != 0:
@@ -195,7 +193,6 @@ class BaseApproachClass:
             return range
         else:
             return 0.0
-
 
     def toggle_light(self, value):
         """
