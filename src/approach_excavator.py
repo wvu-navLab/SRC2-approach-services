@@ -145,6 +145,7 @@ class ApproachExcavatorService(BaseApproachClass):
         Turn in place to check for excavator
         """
         #Change logic to count to 2 - also face in front first
+        double_check = False
         _range = 0.0
         search = False
         self.command_laser(0)
@@ -160,6 +161,7 @@ class ApproachExcavatorService(BaseApproachClass):
             rospy.sleep(0.5)
             self.check_for_excavator(self.boxes.boxes)
             if self.rover:
+                double_check = True
                 print("Excavator found")
                 if print_to_terminal:
                     print(self.rover)
@@ -174,7 +176,7 @@ class ApproachExcavatorService(BaseApproachClass):
                     self.face_excavator()
                 self.stop()
 
-        else:        #else turn in place
+        if double_check == False:        #else turn in place
             for i in range(150):
 
                 if toggle_light_ == 1:
