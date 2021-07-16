@@ -156,6 +156,7 @@ class ApproachExcavatorService(BaseApproachClass):
         if self.rover: #try in front
             print("Excavator found first time")
             self.rover = False
+            self.stop()
             rospy.sleep(0.5)
             self.check_for_excavator(self.boxes.boxes)
             if self.rover:
@@ -188,6 +189,7 @@ class ApproachExcavatorService(BaseApproachClass):
                 if self.rover:
                     print("Excavator found first time")
                     self.rover = False
+                    self.stop()
                     rospy.sleep(0.5)
                     self.check_for_excavator(self.boxes.boxes)
                     if self.rover:

@@ -126,6 +126,7 @@ class ApproachChargingStationService(BaseApproachClass):
         if self.base: #try in front
             print("Charging station found first time")
             self.base = False
+            self.stop()
             rospy.sleep(0.5)
             self.check_for_base_station(self.boxes.boxes)
             if self.base:
@@ -157,6 +158,7 @@ class ApproachChargingStationService(BaseApproachClass):
                 if self.base: #try in front
                     print("Charging station found first time")
                     self.base = False
+                    self.stop()
                     rospy.sleep(0.5)
                     self.check_for_base_station(self.boxes.boxes)
 
