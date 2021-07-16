@@ -121,6 +121,7 @@ class ApproachChargingStationService(BaseApproachClass):
         search = False
         self.check_for_base_station(self.boxes.boxes)
         toggle_light_ = 1
+        double_check = False
 
 
         if self.base: #try in front
@@ -131,6 +132,7 @@ class ApproachChargingStationService(BaseApproachClass):
             self.check_for_base_station(self.boxes.boxes)
             if self.base:
                 print("Charging station found second time")
+                double_check == True
                 if print_to_terminal:
                     print(self.base)
                 self.stop()
@@ -142,7 +144,7 @@ class ApproachChargingStationService(BaseApproachClass):
                     self.face_base()
                 self.stop()
 
-        else:        #else turn in place
+        if double_check == False:        #else turn in place
             for i in range(150):
 
                 if toggle_light_ == 1:
