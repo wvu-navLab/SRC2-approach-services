@@ -34,6 +34,7 @@ print_to_terminal = rospy.get_param('approach_base_station_service/print_to_term
 ROVER_MIN_VEL = rospy.get_param('approach_base_station_service/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_base_station_service/approach_timeout', 50)
 LASER_RANGE = 9
+LASER_THRESHOLD = 8.0
 
 class Obstacle:
     """
@@ -183,7 +184,7 @@ class BaseApproachClass:
         _val = 0
         _ind = 0
         for i in laser.ranges[0:99]:
-            if not np.isinf(i) and i < LASER_THRES:
+            if not np.isinf(i) and i < LASER_THRESHOLD:
                 _val+=i
                 _ind+=1
         if _ind != 0:
