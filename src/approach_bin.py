@@ -171,9 +171,7 @@ class ApproachbinService(BaseApproachClass):
             rospy.get_time()
         init_time = rospy.get_time()
         toggle_light_ = 1
-        # print("ENTERING WHILE LOOP")
         while True:
-            # print("INSIDE WHILE LOOP")
             self.check_for_bin(self.boxes.boxes)
 
             # Check for Rover
@@ -287,7 +285,17 @@ class ApproachbinService(BaseApproachClass):
         Service to align the rover to the bin using
         bounding boxes from inference node
         """
+        while rospy.get_time() == 0:
+            rospy.get_time()
+        init_time = rospy.get_time()
+
         while True:
+            curr_time = rospy.get_time() # Timeout break:
+            rospy.loginfo("trying to face excavator")
+            if curr_time - init_time > APPROACH_TIMEOUT:
+                rospy.logerr("Timeout in FACE Regolith ")
+                break
+
             self.check_for_bin(self.boxes.boxes)
             x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
             if print_to_terminal:

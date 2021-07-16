@@ -356,8 +356,17 @@ class ApproachExcavatorService(BaseApproachClass):
         Service to align the rover to the excavator using
         bounding boxes from inference node
         """
-        while True:                     ###############REMOVE THIS LATER - CANNOT GET STUCK IN THIS THINGS!!! #######################################################################
-            print("Trying to face excavator")
+        while rospy.get_time() == 0:
+            rospy.get_time()
+        init_time = rospy.get_time()
+
+        while True:
+            curr_time = rospy.get_time() # Timeout break:
+            rospy.loginfo("trying to face excavator")
+            if curr_time - init_time > APPROACH_TIMEOUT:
+                rospy.logerr("Timeout in FACE Excavator ")
+                break
+
             self.check_for_excavator(self.boxes.boxes)
             x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
             if print_to_terminal:
