@@ -36,6 +36,7 @@ APPROACH_TIMEOUT = rospy.get_param('approach_base_station_service/approach_timeo
 LASER_RANGE = 9
 LASER_THRESHOLD = 8.0
 
+
 class Obstacle:
     """
     Obstacle Definition

@@ -74,7 +74,7 @@ class ApproachExcavatorService(BaseApproachClass):
         self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
 
         rospy.sleep(2)
-        rospy.loginfo("Approach Excavator service node is running")
+        rospy.logerr("APPROACH EXCAVATOR. Approach Excavator service node is running")
         s = rospy.Service('approach_excavator_service', ApproachExcavator,
                           self.approach_excavator_handle)
         rospy.spin()
@@ -92,7 +92,7 @@ class ApproachExcavatorService(BaseApproachClass):
         #self.ts.registerCallback(self.image_callback)
 
     def image_unregister(self):
-        rospy.loginfo("Aprroach Excavator Unregister")
+        rospy.logerr("APPROACH EXCAVATOR. Approach Excavator Unregister")
         self.disparity_sub.unregister()
         self.image_sub .unregister()
 
@@ -133,10 +133,9 @@ class ApproachExcavatorService(BaseApproachClass):
         else:
             self.distance_threshold = LASER_CLOSE_RANGE
 
-        rospy.loginfo("Aprroach Excavator Service Started")
+        rospy.logerr("APPROACH EXCAVATOR. Approach Excavator Service Started")
         self.image_subscriber() # start subscriber
         response = self.search_for_excavator()
-        rospy.loginfo("Aprroach Excavator Service Started")
         self.image_unregister()
         return response
 
@@ -155,14 +154,14 @@ class ApproachExcavatorService(BaseApproachClass):
 
 
         if self.rover: #try in front
-            print("Excavator found first time")
+            rospy.logerr("APPROACH EXCAVATOR. Excavator found first time")
             self.rover = False
             self.stop()
             rospy.sleep(0.5)
             self.check_for_excavator(self.boxes.boxes)
             if self.rover:
                 double_check = True
-                print("Excavator found")
+                rospy.logerr("APPROACH EXCAVATOR. Excavator found")
                 if print_to_terminal:
                     print(self.rover)
                 self.stop()
@@ -189,13 +188,13 @@ class ApproachExcavatorService(BaseApproachClass):
                 self.turn_in_place(-1)
                 self.check_for_excavator(self.boxes.boxes)
                 if self.rover:
-                    print("Excavator found first time")
+                    rospy.logerr("APPROACH EXCAVATOR. Excavator found first time")
                     self.rover = False
                     self.stop()
                     rospy.sleep(0.5)
                     self.check_for_excavator(self.boxes.boxes)
                     if self.rover:
-                        print("Excavator found second time - Do rest of the steps")
+                        rospy.logerr("APPROACH EXCAVATOR. Excavator found second time - Do rest of the steps")
                         if print_to_terminal:
                             print(self.rover)
                         self.stop()
@@ -236,17 +235,12 @@ class ApproachExcavatorService(BaseApproachClass):
         self.rover = False  # reset flag variable
         return response
 
-
-
-
-
     def approach_excavator(self):
         """
         Visual approach the excavator,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
         print("Start approach excavator maneuver")
-        turning_offset_i = 0.0
         while rospy.get_time() == 0:
             rospy.get_time()
         init_time = rospy.get_time()
@@ -255,8 +249,7 @@ class ApproachExcavatorService(BaseApproachClass):
         while True:
             curr_time = rospy.get_time()
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in approach excavator service")
-                print("TIMEOUT !! in approach excavator service")
+                rospy.logerr("APPROACH EXCAVATOR. Timeout in approach excavator service")
                 return 0.0, False
 
             if toggle_light_ == 1:
@@ -287,59 +280,32 @@ class ApproachExcavatorService(BaseApproachClass):
             speed = ROVER_MIN_VEL
 
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
-            turning_offset = 0.0
-            rotation_speed = (-x_mean_base/840+turning_offset+0.5*turning_offset_i)
+            rotation_speed = -x_mean_base/840
 
 
             if median_distance < self.distance_threshold:
-                print("Approached to target (median distance). Stopping.")
+                rospy.logerr("APPROACH EXCAVATOR. Approached to target (median distance). Stopping.")
                 self.stop()
                 break
             elif median_distance < LASER_RANGE:
-                print("Closer from target. Drive.")
+                rospy.logerr("APPROACH EXCAVATOR. Closer from target. Drive.")
                 self.check_for_excavator(self.boxes.boxes)
                 x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
                 if np.abs(x_mean) >= 200:
                     self.stop()
                     self.face_excavator()
                 else:
-                    print("Far from target. Drive.")
+                    rospy.logerr("APPROACH EXCAVATOR. Far from target. Drive.")
                     print("Base speed : ", speed/4)
                     print("Base rotational speed : ", rotation_speed/4)
                     self.drive(speed/4, rotation_speed/4)
                     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
             else:
-                print("Far from target. Drive.")
+                rospy.logerr("APPROACH EXCAVATOR. Far from target. Drive.")
                 print("Base speed : ", speed)
                 print("Base rotational speed : ", rotation_speed)
-                self.drive(speed, rotation_speed)
-
-
-
-            # if laser < self.distance_threshold and laser != 0.0:
-            #     print("Approached to target Laser Range. Stopping.")
-            #     self.stop()
-            #     break
-            # elif laser < LASER_RANGE:
-            #     print("Close from target. Drive.")
-            #     self.check_for_excavator(self.boxes.boxes)
-            #     x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
-            #     if np.abs(x_mean) >= 200:
-            #         self.stop()
-            #         self.face_excavator()
-            #     else:
-            #         print("Far from target. Drive.")
-            #         print("Base speed : ", speed/4)
-            #         print("Base rotational speed : ", rotation_speed/4)
-            #         self.drive(speed/4, rotation_speed/4)
-            #         # if within LASER_RANGE, approach to half that distance ~2m? very slowly
-            # else:
-            #     print("Far from target. Drive.")
-            #     print("Base speed : ", speed)
-            #     print("Base rotational speed : ", rotation_speed)
-            #     self.drive(speed, rotation_speed)
-
-        print("Close to Excavator")
+                self.drive(speed/2, rotation_speed/2)
+        rospy.logerr("APPROACH EXCAVATOR. Close to Excavator")
         self.stop()
         return self.laser_mean(), True
 
@@ -362,9 +328,9 @@ class ApproachExcavatorService(BaseApproachClass):
 
         while True:
             curr_time = rospy.get_time() # Timeout break:
-            rospy.loginfo("trying to face excavator")
+            rospy.logerr("APPROACH EXCAVATOR. Trying to face excavator")
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in FACE Excavator ")
+                rospy.logerr("APPROACH EXCAVATOR. Timeout in FACE Excavator ")
                 break
 
             self.check_for_excavator(self.boxes.boxes)
@@ -450,7 +416,7 @@ class ApproachExcavatorService(BaseApproachClass):
         Shutdown Node
         """
         self.stop()
-        rospy.loginfo("Approach excavator service node is shutdown")
+        rospy.logerr("APPROACH EXCAVATOR. Approach excavator service node is shutdown")
         rospy.sleep(1)
 
 

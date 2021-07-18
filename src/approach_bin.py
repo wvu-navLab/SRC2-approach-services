@@ -38,7 +38,8 @@ print_to_terminal = rospy.get_param('approach_bin/print_to_terminal', True)
 ROVER_MIN_VEL = rospy.get_param('approach_bin/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_bin/approach_timeout', 50)
 # LASER_RANGE = rospy.get_param('approach_bin/laser_range',  2.0)
-LASER_RANGE = 5.5
+LASER_RANGE = 5.50
+LASER_CLOSE_RANGE = 2.75
 ROTATIONAL_SPEED = rospy.get_param('approach_bin/rotational_speed',  0.25)
 
 
@@ -60,15 +61,15 @@ class ApproachbinService(BaseApproachClass):
     def __init__(self):
         """
         """
-
         self.robot_name = rospy.get_param("robot_name")
         rospy.on_shutdown(self.shutdown)
         self.rover = False
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
+        self.distance_threshold = LASER_CLOSE_RANGE
         rospy.sleep(2)
-        rospy.loginfo("Approach bin service node is running")
+        rospy.logerr("APPROACH BIN. Approach bin service node is running")
         s = rospy.Service('approach_bin_service', ApproachBin,
                           self.approach_bin_handle)
         rospy.spin()
@@ -81,7 +82,7 @@ class ApproachbinService(BaseApproachClass):
         self.disparity_sub = rospy.Subscriber("disparity", DisparityImage, self.disparity_callback)
 
     def image_unregister(self):
-        rospy.loginfo("Aprroach Bin Unregister")
+        rospy.logerr("APPROACH BIN. Approach Bin Unregister")
         self.disparity_sub.unregister()
 
 
@@ -104,7 +105,7 @@ class ApproachbinService(BaseApproachClass):
         try:
             _find_object = _find_object(robot_name = self.robot_name)
         except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
+            rospy.logerr("APPROACH BIN.Service did not process request: " + str(exc))
         print(_find_object)
         self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
@@ -119,7 +120,7 @@ class ApproachbinService(BaseApproachClass):
 
         self.image_subscriber()
         response = self.search_for_bin()
-        rospy.loginfo("Aprroach bin Service Started")
+        rospy.logerr("APPROACH BIN. Service Started")
         self.image_unregister()
         return response
 
@@ -133,7 +134,7 @@ class ApproachbinService(BaseApproachClass):
             self.turn_in_place(-1)
             self.check_for_bin(self.boxes.boxes)
             if self.rover:
-                print("bin found")
+                rospy.logerr("APPROACH BIN. Bin found")
                 if print_to_terminal:
                     print(self.rover)
                 self.stop()
@@ -154,9 +155,9 @@ class ApproachbinService(BaseApproachClass):
         bin_range.data = float(_range)
         response.range = bin_range
         if search == True:
-            rospy.loginfo("Rover approached bin")
+            rospy.logerr("APPROACH BIN. Rover approached bin")
         else:
-            rospy.logerr("bin was not found when running turn in place maneuver or timeout")
+            rospy.logerr("APPROACH BIN. Bin was not found when running turn in place maneuver or timeout")
         self.rover = False  # reset flag variable
         return response
 
@@ -165,13 +166,24 @@ class ApproachbinService(BaseApproachClass):
         Visual approach the bin,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
-        print("START approach_bin")
-        turning_offset_i = 0.0
+        rospy.logerr("APPROACH BIN. Starting.")
         while rospy.get_time() == 0:
             rospy.get_time()
         init_time = rospy.get_time()
         toggle_light_ = 1
         while True:
+            curr_time = rospy.get_time()
+            if curr_time - init_time > APPROACH_TIMEOUT:
+                rospy.logerr("APPROACH BIN. Timeout in approach bin service.")
+                return 0.0, False
+
+            if toggle_light_ == 1:
+                self.toggle_light(10)
+                toggle_light_ = 0
+            else:
+                self.toggle_light(0)
+                toggle_light_ = 1
+
             self.check_for_bin(self.boxes.boxes)
 
             # Check for Rover
@@ -183,67 +195,67 @@ class ApproachbinService(BaseApproachClass):
                     if dist < 6.0:
                         rospy.sleep(10)
 
+            laser = self.laser_mean()
+            rospy.logerr("APPROACH BIN. Distance Laser")
+            print(laser)
+
+            print("Base speed : ", speed/2)
+            speed = ROVER_MIN_VEL
 
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
-            minimum_dist = 10
-            turning_offset = 0.0
-            laser = self.laser_mean()
-            print("LASER : ", laser)
-            if laser < 10.0:
-                minimum_dist = ROVER_MIN_VEL*10
-            if toggle_light_ == 1:
-                self.toggle_light(0)
-                toggle_light_ = 0
-            else:
-                self.toggle_light(0)
-                toggle_light_ = 1
-            curr_time = rospy.get_time()
-            if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in approach bin service")
-                print("TIMEOUT !! in approach bin service")
-                return 0.0, False
+            rotation_speed = -x_mean_base/840
 
-            # for obstacle_ in self.obstacles:
-            #     print("ENTERING OBSTACLE LOOP")
-            #     obstacle_mean_ = float(obstacle_.obstacle.xmin+obstacle_.obstacle.xmax)/2.0-320
-            #     turning_offset_i = turning_offset
-            #     if obstacle_.distance > 0.1:
-            #         if obstacle_.distance < minimum_dist:
-            #             minimum_dist = obstacle_.distance
-            #         if obstacle_.distance < 8:
-            #             turning_offset += np.sign(obstacle_mean_)*0.3 * \
-            #                 (1-np.abs(obstacle_mean_)/320.0)
-            # print("EXITING OBSTACLE LOOP")
-
-
-            if laser < 5:
-                minimum_dist = 3.0
-            speed = minimum_dist/10.0
-            print("SPEED : ", speed)
-            rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
-            # print("ENTERING DRIVE")
-            self.drive(speed, rotation_speed)
-            print("Distance Inference")
-            print(self.object_distance_estimation(self.rover).object_position.point.z)
-            print("Distance Laser")
-            print(laser)
-            # (self.rover.xmax-self.rover.xmin) > 200
-            if laser < LASER_RANGE and laser != 0.0:
+            if laser < self.distance_threshold:
+                rospy.logerr("APPROACH BIN. Approached to target (median distance). Stopping.")
                 self.stop()
-                self.face_regolith()
-                # if within LASER_RANGE, approach to half that distance ~2m? very slowly
-                print("******DOING SLOW/CLOSE BIN APPROACH********")
-                self.drive(speed/4, 0.0)
-                if laser < LASER_RANGE/2 and laser !=0.0:
-                    print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, ready to dump")
+                break
+            elif laser < LASER_RANGE:
+                rospy.logerr("APPROACH BIN. Closer from target. Drive.")
+                self.check_for_excavator(self.boxes.boxes)
+                x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+                if np.abs(x_mean) >= 100:
                     self.stop()
-                    break
+                    self.face_regolith()
+                else:
+                    rospy.logerr("APPROACH BIN. Far from target. Drive.")
+                    print("Drive speed : ", speed/4)
+                    print("Drive rotational speed : ", rotation_speed/8)
+                    self.drive(speed/4, rotation_speed/8)
+                    # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+            else:
+                rospy.logerr("APPROACH BIN. Far from target. Drive.")
+                print("Drive speed : ", speed/2)
+                print("Drive rotational speed : ", rotation_speed/2)
+                self.drive(speed/2, rotation_speed/2)
+
+            # if laser < 5:
+            #     minimum_dist = 3.0
+            # speed = minimum_dist/10.0
+            # print("SPEED : ", speed)
+            # rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
+            # # print("ENTERING DRIVE")
+            # self.drive(speed, rotation_speed)
+            # print("Distance Inference")
+            # print(self.object_distance_estimation(self.rover).object_position.point.z)
+            # print("Distance Laser")
+            # print(laser)
+            # # (self.rover.xmax-self.rover.xmin) > 200
+            # if laser < LASER_RANGE and laser != 0.0:
+            #     self.stop()
+            #     self.face_regolith()
+            #     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
+            #     print("******DOING SLOW/CLOSE BIN APPROACH********")
+            #     self.drive(speed/4, 0.0)
+            #     if laser < LASER_RANGE/2 and laser !=0.0:
+            #         print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, ready to dump")
+            #         self.stop()
+            #         break
 
         rospy.sleep(0.1)
-        print("BEGIN DUMPING")
+        rospy.logerr("APPROACH BIN. Beginning to DUMP.")
         self.drive(0.1,0.0)
         rospy.sleep(5)
-        self.hauler_dump(1.57) # ****************FOR TESTING, SHOULD BE HANDELED BY STATE MACHINE?
+        self.hauler_dump(1.57)
         rospy.sleep(10)
         self.hauler_dump(3.14)
         self.stop()
@@ -251,34 +263,6 @@ class ApproachbinService(BaseApproachClass):
 
         self.stop()
         return self.laser_mean(), True
-
-    def turn_in_place(self, direction):
-        """
-        Turn in place clockwise or counter clockwise
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=10)
-        _cmd_message = Twist()
-        _cmd_message.angular.z = ROTATIONAL_SPEED*direction
-        for i in range(2):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-    def drive(self, speed, heading):
-        """
-        Drive function, send args to the cmd velocity topic
-        Args:
-        speed: linear x velocity of the robot
-        heading: angular z velocity of the robot
-        """
-        _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size=10)
-        _cmd_message = Twist()
-        _cmd_message.linear.x = speed
-        _cmd_message.angular.z = heading
-        for i in range(5):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
-
-
 
     def face_regolith(self):
         """
@@ -291,9 +275,9 @@ class ApproachbinService(BaseApproachClass):
 
         while True:
             curr_time = rospy.get_time() # Timeout break:
-            rospy.loginfo("trying to face excavator")
+            rospy.logerr("APPROACH BIN. Trying to face excavator")
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in FACE Regolith ")
+                rospy.logerr("APPROACH BIN. Timeout in FACE Regolith ")
                 break
 
             self.check_for_bin(self.boxes.boxes)
@@ -312,10 +296,9 @@ class ApproachbinService(BaseApproachClass):
         print("ABOUT TO DUMP")
         _cmd_pub_dump = rospy.Publisher("bin/command/position", Float64, queue_size=10)
         _cmd_message = float(value)
-        for i in range(5):
-            _cmd_pub_dump.publish(_cmd_message)
-            rospy.sleep(0.1)
-        print("*******DUMP FINISHED")
+        _cmd_pub_dump.publish(_cmd_message)
+        rospy.sleep(0.5)
+        rospy.logerr("APPROACH BIN. BIN Dumping")
 
 
     def hauler_bin_reset(self, value):
@@ -325,10 +308,9 @@ class ApproachbinService(BaseApproachClass):
         """
         _cmd_pub_dump = rospy.Publisher("bin/command/position", Float64, queue_size=10)
         _cmd_message = float(value)
-        for i in range(5):
-            _cmd_pub_dump.publish(_cmd_message)
-            rospy.sleep(0.05)
-        print("*******BIN RESET")
+        _cmd_pub_dump.publish(_cmd_message)
+        rospy.sleep(0.25)
+        rospy.logerr("APPROACH BIN. BIN Reset")
 
 
     def shutdown(self):
@@ -336,7 +318,7 @@ class ApproachbinService(BaseApproachClass):
         Shutdown Node
         """
         self.stop()
-        rospy.loginfo("Approach bin service node is shutdown")
+        rospy.logerr("APPROACH BIN. Approach bin service node is shutdown")
         rospy.sleep(1)
 
 
