@@ -60,7 +60,7 @@ class ApproachChargingStationService(BaseApproachClass):
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
-        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
+        self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
         rospy.loginfo("Approach Base Station service node is running")
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)

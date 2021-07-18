@@ -63,12 +63,12 @@ class ApproachbinService(BaseApproachClass):
         """
         self.robot_name = rospy.get_param("robot_name")
         rospy.on_shutdown(self.shutdown)
-        self.rover = False
+        self.bin = False
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
         self.distance_threshold = LASER_CLOSE_RANGE
-        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
+        self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
         rospy.loginfo("APPROACH BIN. Approach bin service node is running")
         s = rospy.Service('approach_bin_service', ApproachBin,
@@ -137,10 +137,10 @@ class ApproachbinService(BaseApproachClass):
         for i in range(250):
             self.turn_in_place(-1)
             self.check_for_bin(self.boxes.boxes)
-            if self.rover:
+            if self.bin:
                 rospy.logerr("APPROACH BIN. Bin found")
                 if print_to_terminal:
-                    print(self.rover)
+                    print(self.bin)
                 self.stop()
                 _range, search = self.approach_bin()
                 if print_to_terminal:
@@ -163,7 +163,7 @@ class ApproachbinService(BaseApproachClass):
             rospy.logerr("APPROACH BIN. Rover approached bin")
         else:
             rospy.logerr("APPROACH BIN. Bin was not found when running turn in place maneuver or timeout")
-        self.rover = False  # reset flag variable
+        self.bin = False  # reset flag variable
 
         self.mast_camera_publisher_pitch.publish(0.0)
 
@@ -213,7 +213,7 @@ class ApproachbinService(BaseApproachClass):
             speed = ROVER_MIN_VEL
             print("Base speed : ", speed)
 
-            x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
+            x_mean_base = float(self.bin.xmin+self.bin.xmax)/2.0-320
             rotation_speed = -x_mean_base/840
 
             if laser < LASER_CLOSE_RANGE:
@@ -223,7 +223,7 @@ class ApproachbinService(BaseApproachClass):
             elif laser < LASER_RANGE:
                 rospy.logerr("APPROACH BIN. Closer from target. Drive.")
                 self.check_for_bin(self.boxes.boxes)
-                x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+                x_mean = float(self.bin.xmin+self.bin.xmax)/2.0-320
                 if np.abs(x_mean) >= 100:
                     self.stop()
                     self.face_regolith()
@@ -247,10 +247,10 @@ class ApproachbinService(BaseApproachClass):
             # # print("ENTERING DRIVE")
             # self.drive(speed, rotation_speed)
             # print("Distance Inference")
-            # print(self.object_distance_estimation(self.rover).object_position.point.z)
+            # print(self.object_distance_estimation(self.bin).object_position.point.z)
             # print("Distance Laser")
             # print(laser)
-            # # (self.rover.xmax-self.rover.xmin) > 200
+            # # (self.bin.xmax-self.bin.xmin) > 200
             # if laser < LASER_RANGE and laser != 0.0:
             #     self.stop()
             #     self.face_regolith()
@@ -292,7 +292,7 @@ class ApproachbinService(BaseApproachClass):
                 break
 
             self.check_for_bin(self.boxes.boxes)
-            x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+            x_mean = float(self.bin.xmin+self.bin.xmax)/2.0-320
             if print_to_terminal:
                 print("base station mean in pixels: {}".format(-x_mean))
             self.drive(0.0, (-x_mean/320)/4)
