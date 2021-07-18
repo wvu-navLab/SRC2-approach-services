@@ -144,7 +144,7 @@ class BaseApproachClass:
         """
         for box in boxes:
             if box.id == 6: # bin id == 6 -- regolith id == 12
-                self.rover = box
+                self.bin = box
 
 
     def check_for_regolith(self, boxes):

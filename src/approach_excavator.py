@@ -70,8 +70,8 @@ class ApproachExcavatorService(BaseApproachClass):
         self.timeout = 60
         self.camera_pitch = 0.0
         self.boxes = DetectedBoxes()
-        self.mast_camera_publisher_yaw = rospy.Publisher("/small_hauler_1/sensor/yaw/command/position", Float64, queue_size = 10 )
-        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
+        self.mast_camera_publisher_yaw = rospy.Publisher("sensor/yaw/command/position", Float64, queue_size = 10 )
+        self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
 
         rospy.sleep(2)
         rospy.logerr("APPROACH EXCAVATOR. Approach Excavator service node is running")
