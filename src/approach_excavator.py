@@ -268,7 +268,6 @@ class ApproachExcavatorService(BaseApproachClass):
             _pitch = self.face_excavator_mast_camera_pitch()
             print("Pitch angle: {}".format(_pitch))
 
-
             median_distance = self.rover_point_estimation().point.z
             print("Distance Median")
             print(median_distance)
@@ -284,7 +283,6 @@ class ApproachExcavatorService(BaseApproachClass):
 
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             rotation_speed = -x_mean_base/840
-
 
             if median_distance < self.distance_threshold:
                 rospy.logerr("APPROACH EXCAVATOR. Approached to target (median distance). Stopping.")

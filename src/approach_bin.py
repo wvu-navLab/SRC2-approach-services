@@ -239,29 +239,6 @@ class ApproachbinService(BaseApproachClass):
                 print("Drive rotational speed : ", rotation_speed)
                 self.drive(speed, rotation_speed)
 
-            # if laser < 5:
-            #     minimum_dist = 3.0
-            # speed = minimum_dist/10.0
-            # print("SPEED : ", speed)
-            # rotation_speed = -x_mean_base/840+turning_offset+0.5*turning_offset_i
-            # # print("ENTERING DRIVE")
-            # self.drive(speed, rotation_speed)
-            # print("Distance Inference")
-            # print(self.object_distance_estimation(self.bin).object_position.point.z)
-            # print("Distance Laser")
-            # print(laser)
-            # # (self.bin.xmax-self.bin.xmin) > 200
-            # if laser < LASER_RANGE and laser != 0.0:
-            #     self.stop()
-            #     self.face_regolith()
-            #     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
-            #     print("******DOING SLOW/CLOSE BIN APPROACH********")
-            #     self.drive(speed/4, 0.0)
-            #     if laser < LASER_RANGE/2 and laser !=0.0:
-            #         print("+++++++++++++++DID CLOSE APPROACH AND IS WITHIN 2.25m, ready to dump")
-            #         self.stop()
-            #         break
-
         rospy.sleep(0.1)
         rospy.logerr("APPROACH BIN. Beginning to DUMP.")
         self.drive(speed/8, 0.0)
