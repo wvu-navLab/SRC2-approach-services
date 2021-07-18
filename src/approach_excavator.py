@@ -150,7 +150,7 @@ class ApproachExcavatorService(BaseApproachClass):
         double_check = False
         _range = 0.0
         search = False
-        self.command_laser(0)
+        self.mast_camera_publisher_pitch(0)
         rospy.sleep(0.1)
         self.check_for_excavator(self.boxes.boxes)
         toggle_light_ = 1
@@ -168,9 +168,9 @@ class ApproachExcavatorService(BaseApproachClass):
                 if print_to_terminal:
                     print(self.rover)
                 self.stop()
-                self.command_laser(0.05)
+                self.mast_camera_publisher_pitch(0.05)
                 _range, search = self.approach_excavator()
-                self.command_laser(0)
+                self.mast_camera_publisher_pitch(0.0)
                 if print_to_terminal:
                     print("Rover approach to excavator was: {}"
                           "and the laser distance is {}".format(search, _range))
@@ -201,9 +201,9 @@ class ApproachExcavatorService(BaseApproachClass):
                         if print_to_terminal:
                             print(self.rover)
                         self.stop()
-                        self.command_laser(0.05)
+                        self.mast_camera_publisher_pitch(0.05)
                         _range, search = self.approach_excavator()
-                        self.command_laser(0)
+                        self.mast_camera_publisher_pitch(0.0)
                         if print_to_terminal:
                             print("Rover approach to excavator was: {}"
                             "and the laser distance is {}".format(search, _range))

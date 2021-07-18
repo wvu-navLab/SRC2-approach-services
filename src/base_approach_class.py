@@ -95,19 +95,6 @@ class BaseApproachClass:
         _cmd_publisher.publish(_cmd_message)
         rospy.sleep(0.05)
 
-    def command_laser(self, pitch):
-        """
-        Drive function, send args to the cmd velocity topic
-        Args:
-        speed: linear x velocity of the robot
-        heading: angular z velocity of the robot
-        """
-        _cmd_publisher = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
-        _cmd_message = Float64()
-        _cmd_message.data = pitch
-        _cmd_publisher.publish(_cmd_message)
-        rospy.sleep(0.05)
-
     def drive_full(self, vx, vy, wz):
         """
         Drive function, send args to the cmd velocity topic
