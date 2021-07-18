@@ -120,6 +120,7 @@ class ApproachbinService(BaseApproachClass):
         """
 
         self.image_subscriber()
+        self.toggle_light(0) #turn off lights at the beginning
         response = self.search_for_bin()
         rospy.logerr("APPROACH BIN. Service Started")
         self.image_unregister()
@@ -215,7 +216,7 @@ class ApproachbinService(BaseApproachClass):
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             rotation_speed = -x_mean_base/840
 
-            if laser < self.distance_threshold:
+            if laser < LASER_CLOSE_RANGE:
                 rospy.logerr("APPROACH BIN. Approached to target. Stopping.")
                 self.stop()
                 break
@@ -270,8 +271,8 @@ class ApproachbinService(BaseApproachClass):
         self.hauler_dump(3.14)
         self.stop()
         self.hauler_bin_reset(0.0)
-
         self.stop()
+
         return self.laser_mean(), True
 
     def face_regolith(self):
