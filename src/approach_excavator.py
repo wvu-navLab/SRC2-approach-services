@@ -145,6 +145,8 @@ class ApproachExcavatorService(BaseApproachClass):
         Turn in place to check for excavator
         """
         #Change logic to count to 2 - also face in front first
+        self.mast_camera_publisher_pitch.publish(0.0)
+
         double_check = False
         _range = 0.0
         search = False
@@ -219,6 +221,7 @@ class ApproachExcavatorService(BaseApproachClass):
         excavator_range = Float64()
         excavator_range.data = float(_range)
         response.range = excavator_range
+        self.mast_camera_publisher_pitch.publish(0.0)
 
         if search == True:
             rospy.loginfo("Camera Based Rover approached")

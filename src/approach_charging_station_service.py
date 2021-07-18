@@ -60,6 +60,7 @@ class ApproachChargingStationService(BaseApproachClass):
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
+        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
         rospy.loginfo("Approach Base Station service node is running")
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
@@ -119,6 +120,7 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         Turn in place to check for base station
         """
+        self.mast_camera_publisher_pitch.publish(0.0)
         _range = 0.0
         search = False
         self.check_for_base_station(self.boxes.boxes)
@@ -181,6 +183,8 @@ class ApproachChargingStationService(BaseApproachClass):
                         self.stop()
                         break
                 rospy.sleep(0.05)
+
+        self.mast_camera_publisher_pitch.publish(0.0)
         self.stop()
 
         response = ApproachChargingStationResponse()
@@ -202,6 +206,7 @@ class ApproachChargingStationService(BaseApproachClass):
         Visual approach the base station,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
+
         turning_offset_i = 0.0
         while rospy.get_time() == 0:
             rospy.get_time()
