@@ -179,7 +179,7 @@ class ApproachExcavatorService(BaseApproachClass):
                 self.stop()
 
         if double_check == False:        #else turn in place
-            for i in range(150):
+            for i in range(250):
 
                 if toggle_light_ == 1:
                     self.toggle_light(10)
@@ -211,7 +211,6 @@ class ApproachExcavatorService(BaseApproachClass):
                             self.face_excavator()
                             self.stop()
                         break
-                        rospy.sleep(0.05)
         self.stop()
 
         response = ApproachExcavatorResponse()

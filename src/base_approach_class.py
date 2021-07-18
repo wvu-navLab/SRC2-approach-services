@@ -4,6 +4,7 @@ Created on Sun May 17 22:58:24 2020
 
 @author: Chris Tatsch
 """
+from numpy.core.numeric import Inf
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
@@ -64,9 +65,8 @@ class BaseApproachClass:
         _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
         _cmd_message = Twist()
         _cmd_message.angular.z = 0.25*direction
-        for i in range(2):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
+        _cmd_publisher.publish(_cmd_message)
+        rospy.sleep(0.10)
 
     def object_distance_estimation(self, object):
         """
@@ -120,9 +120,8 @@ class BaseApproachClass:
         _cmd_message.linear.x = vx
         _cmd_message.linear.x = vy
         _cmd_message.angular.z = wz
-        for i in range(1):
-            _cmd_publisher.publish(_cmd_message)
-            rospy.sleep(0.05)
+        _cmd_publisher.publish(_cmd_message)
+        rospy.sleep(0.05)
 
     def stop(self):
         """
@@ -131,7 +130,7 @@ class BaseApproachClass:
         _cmd_publisher = rospy.Publisher("driving/cmd_vel", Twist, queue_size = 10 )
         _cmd_message = Twist()
         _cmd_publisher.publish(_cmd_message)
-        _cmd_publisher.publish(_cmd_message)
+        rospy.sleep(0.05)
 
 
     def check_for_obstacles(self,boxes):
@@ -194,7 +193,7 @@ class BaseApproachClass:
                 print("Laser Range: {}".format(range))
             return range
         else:
-            return 0.0
+            return Inf
 
     def toggle_light(self, value):
         """
