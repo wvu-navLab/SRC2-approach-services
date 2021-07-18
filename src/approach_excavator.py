@@ -137,6 +137,7 @@ class ApproachExcavatorService(BaseApproachClass):
         self.image_subscriber() # start subscriber
         response = self.search_for_excavator()
         self.image_unregister()
+        self.toggle_light(20) # turn the lights at the end
         return response
 
     def search_for_excavator(self):

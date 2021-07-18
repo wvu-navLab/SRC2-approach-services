@@ -122,6 +122,7 @@ class ApproachbinService(BaseApproachClass):
         response = self.search_for_bin()
         rospy.logerr("APPROACH BIN. Service Started")
         self.image_unregister()
+        self.toggle_light(20) #turn lights at the end
         return response
 
     def search_for_bin(self):
