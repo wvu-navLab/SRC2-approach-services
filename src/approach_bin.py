@@ -220,13 +220,13 @@ class ApproachbinService(BaseApproachClass):
                     rospy.logerr("APPROACH BIN. Far from target. Drive.")
                     print("Drive speed : ", speed/4)
                     print("Drive rotational speed : ", rotation_speed/8)
-                    self.drive(speed/4, rotation_speed/8)
+                    self.drive(speed/2, rotation_speed/4)
                     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
             else:
                 rospy.logerr("APPROACH BIN. Far from target. Drive.")
                 print("Drive speed : ", speed/2)
                 print("Drive rotational speed : ", rotation_speed/2)
-                self.drive(speed/2, rotation_speed/2)
+                self.drive(speed, rotation_speed)
 
             # if laser < 5:
             #     minimum_dist = 3.0
