@@ -60,6 +60,7 @@ class ApproachChargingStationService(BaseApproachClass):
         self.obstacles = []
         self.timeout = 60
         self.boxes = DetectedBoxes()
+        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
         rospy.loginfo("Approach Base Station service node is running")
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
@@ -94,6 +95,7 @@ class ApproachChargingStationService(BaseApproachClass):
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
         self.boxes = _find_object.boxes
+        print(self.boxes.boxes)
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
             dist = self.object_distance_estimation(obstacle)
@@ -110,6 +112,7 @@ class ApproachChargingStationService(BaseApproachClass):
 
         #subscriber unregister #todo figure out how to unregisterd
         self.image_unregister()
+        self.toggle_light(20) #turn on the lights at the end
         print("Subscriber unregisterd")
         return response
 
@@ -117,18 +120,20 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         Turn in place to check for base station
         """
+        self.mast_camera_publisher_pitch.publish(0.0)
         _range = 0.0
         search = False
         self.check_for_base_station(self.boxes.boxes)
         toggle_light_ = 1
         double_check = False
+        self.toggle_light(10)
 
 
         if self.base: #try in front
             print("Charging station found first time")
             self.base = False
             self.stop()
-            rospy.sleep(0.5)
+            rospy.sleep(0.8)
             self.check_for_base_station(self.boxes.boxes)
             if self.base:
                 print("Charging station found second time")
@@ -145,7 +150,7 @@ class ApproachChargingStationService(BaseApproachClass):
                 self.stop()
 
         if double_check == False:        #else turn in place
-            for i in range(150):
+            for i in range(180):
 
                 if toggle_light_ == 1:
                     self.toggle_light(10)
@@ -154,7 +159,7 @@ class ApproachChargingStationService(BaseApproachClass):
                     self.toggle_light(0)
                     toggle_light_ = 1
 
-                self.turn_in_place(-1)
+                self.turn_in_place(1)
                 self.check_for_base_station(self.boxes.boxes)
 
                 if self.base: #try in front
@@ -178,6 +183,8 @@ class ApproachChargingStationService(BaseApproachClass):
                         self.stop()
                         break
                 rospy.sleep(0.05)
+
+        self.mast_camera_publisher_pitch.publish(0.0)
         self.stop()
 
         response = ApproachChargingStationResponse()
@@ -199,6 +206,7 @@ class ApproachChargingStationService(BaseApproachClass):
         Visual approach the base station,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
+
         turning_offset_i = 0.0
         while rospy.get_time() == 0:
             rospy.get_time()

@@ -68,8 +68,9 @@ class ApproachbinService(BaseApproachClass):
         self.timeout = 60
         self.boxes = DetectedBoxes()
         self.distance_threshold = LASER_CLOSE_RANGE
+        self.mast_camera_publisher_pitch = rospy.Publisher("/small_hauler_1/sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
-        rospy.logerr("APPROACH BIN. Approach bin service node is running")
+        rospy.loginfo("APPROACH BIN. Approach bin service node is running")
         s = rospy.Service('approach_bin_service', ApproachBin,
                           self.approach_bin_handle)
         rospy.spin()
@@ -122,12 +123,14 @@ class ApproachbinService(BaseApproachClass):
         response = self.search_for_bin()
         rospy.logerr("APPROACH BIN. Service Started")
         self.image_unregister()
+        self.toggle_light(20) #turn lights at the end
         return response
 
     def search_for_bin(self):
         """
         Turn in place to check for bin
         """
+        self.mast_camera_publisher_pitch.publish(0.0)
         _range = 0.0
         search = False
         for i in range(150):
@@ -159,6 +162,9 @@ class ApproachbinService(BaseApproachClass):
         else:
             rospy.logerr("APPROACH BIN. Bin was not found when running turn in place maneuver or timeout")
         self.rover = False  # reset flag variable
+
+        self.mast_camera_publisher_pitch.publish(0.0)
+
         return response
 
     def approach_bin(self):
@@ -166,6 +172,7 @@ class ApproachbinService(BaseApproachClass):
         Visual approach the bin,
         !!Need to improve robustness by adding some error check and obstacle avoidance
         """
+
         rospy.logerr("APPROACH BIN. Starting.")
         while rospy.get_time() == 0:
             rospy.get_time()
@@ -192,7 +199,8 @@ class ApproachbinService(BaseApproachClass):
                 for object_ in self.rover_boxes:
                     dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
-                    if dist < 6.0:
+                    print( "Found Rover In front of approch - WAIT - distance: {} ".format(dist))
+                    if dist < 7.0:
                         rospy.sleep(10)
 
             laser = self.laser_mean()
