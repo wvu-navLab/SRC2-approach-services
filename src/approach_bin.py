@@ -250,6 +250,17 @@ class ApproachbinService(BaseApproachClass):
         self.stop()
         self.hauler_bin_reset(0.0)
         self.stop()
+        # move 10cm back and do it again
+        print("Start second dumping (just to be sure - TODO implement to look inside the bin)")
+        self.drive(-speed/8, 0.0)
+        rospy.sleep(1)
+        self.stop()
+        self.hauler_dump(1.57)
+        rospy.sleep(10)
+        self.hauler_dump(3.14)
+        self.stop()
+        self.hauler_bin_reset(0.0)
+        self.stop()
 
         return self.laser_mean(), True
 
