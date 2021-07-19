@@ -154,8 +154,6 @@ class ApproachExcavatorService(BaseApproachClass):
         rospy.sleep(0.1)
         self.check_for_excavator(self.boxes.boxes)
         toggle_light_ = 1
-
-
         if self.rover: #try in front
             rospy.logerr("APPROACH EXCAVATOR. Excavator found first time")
             self.rover = False
@@ -179,7 +177,7 @@ class ApproachExcavatorService(BaseApproachClass):
                 self.stop()
 
         if double_check == False:        #else turn in place
-            for i in range(250):
+            for i in range(240):
 
                 if toggle_light_ == 1:
                     self.toggle_light(10)

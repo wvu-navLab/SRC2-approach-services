@@ -134,7 +134,7 @@ class ApproachbinService(BaseApproachClass):
         self.mast_camera_publisher_pitch.publish(0.0)
         _range = 0.0
         search = False
-        for i in range(250):
+        for i in range(240):
             self.turn_in_place(-1)
             self.check_for_bin(self.boxes.boxes)
             if self.bin:
