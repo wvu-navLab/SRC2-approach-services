@@ -150,7 +150,6 @@ class ApproachExcavatorService(BaseApproachClass):
         double_check = False
         _range = 0.0
         search = False
-        self.mast_camera_publisher_pitch(0)
         rospy.sleep(0.1)
         self.check_for_excavator(self.boxes.boxes)
         toggle_light_ = 1
