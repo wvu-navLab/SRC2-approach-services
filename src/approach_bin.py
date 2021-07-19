@@ -202,8 +202,8 @@ class ApproachbinService(BaseApproachClass):
                 for object_ in self.rover_boxes:
                     dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
-                    print( "Found Rover In front of approch - WAIT - distance: {} ".format(dist))
                     if dist < 7.0 and dist != 0.0:
+                        print("There's a rover in front of me. Distance: {}".format(dist))
                         self.stop()
                         rospy.sleep(10)
 

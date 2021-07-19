@@ -4,6 +4,7 @@ Created on Sun May 17 22:58:24 2020
 
 @author: Chris Tatsch
 """
+from numpy.core.numeric import Inf
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
@@ -236,7 +237,9 @@ class ApproachChargingStationService(BaseApproachClass):
             laser = self.laser_mean()
             print("Charging station distance from laser mean distance: {}".format(laser))
 
-            if median_distance > 1.5*laser:
+            if median_distance == 0.0 or laser == Inf:
+                distance = Inf
+            elif median_distance > 1.5*laser:
                 distance = median_distance
             else:
                 distance = laser
