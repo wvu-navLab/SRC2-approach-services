@@ -165,9 +165,9 @@ class ApproachExcavatorService(BaseApproachClass):
                 if print_to_terminal:
                     print(self.rover)
                 self.stop()
-                self.mast_camera_publisher_pitch(0.05)
+                self.mast_camera_publisher_pitch.publish(0.05)
                 _range, search = self.approach_excavator()
-                self.mast_camera_publisher_pitch(0.0)
+                self.mast_camera_publisher_pitch.publish(0.0)
                 if print_to_terminal:
                     print("Rover approach to excavator was: {}"
                           "and the laser distance is {}".format(search, _range))
@@ -198,9 +198,9 @@ class ApproachExcavatorService(BaseApproachClass):
                         if print_to_terminal:
                             print(self.rover)
                         self.stop()
-                        self.mast_camera_publisher_pitch(0.05)
+                        self.mast_camera_publisher_pitch.publish(0.05)
                         _range, search = self.approach_excavator()
-                        self.mast_camera_publisher_pitch(0.0)
+                        self.mast_camera_publisher_pitch.publish(0.0)
                         if print_to_terminal:
                             print("Rover approach to excavator was: {}"
                             "and the laser distance is {}".format(search, _range))

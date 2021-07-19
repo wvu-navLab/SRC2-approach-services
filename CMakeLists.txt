@@ -75,7 +75,7 @@ catkin_package(
 ################################################################################
 # Install
 ################################################################################
-install(PROGRAMS src/approach_bin.py src/approach_charging_station_service.py src/approach_excavator.py src/base_approach_class.py
+install(PROGRAMS src/approach_bin.py src/approach_charging_station.py src/approach_excavator.py src/base_approach_class.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
