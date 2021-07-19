@@ -226,7 +226,8 @@ class ApproachChargingStationService(BaseApproachClass):
                 for object_ in self.rover_boxes:
                     dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
-                    if dist < 6.0:
+                    if dist < 5.0 and dist != 0.0:
+                        print("There's a rover in front of me. Distance: {}".format(dist))
                         self.stop()
                         rospy.sleep(10)
             # Calculate base station distance from different sensors
@@ -234,9 +235,6 @@ class ApproachChargingStationService(BaseApproachClass):
             print("Charging station distance from disparity image: {}".format(median_distance))
             laser = self.laser_mean()
             print("Charging station distance from laser mean distance: {}".format(laser))
-
-            x_mean_base = float(self.base.xmin+self.base.xmax)/2.0-320
-            rotation_speed = -x_mean_base/840
 
             if median_distance > 1.5*laser:
                 distance = median_distance
@@ -246,7 +244,11 @@ class ApproachChargingStationService(BaseApproachClass):
             if distance < LASER_RANGE:
                 break
             else:
-                speed = ROVER_MIN_VEL*(distance-4.0)/10.0
+                x_mean_base = float(self.base.xmin+self.base.xmax)/2.0-320
+                speed = min(ROVER_MIN_VEL*(distance-5.0)/10.0 + ROVER_MIN_VEL/4, ROVER_MIN_VEL)
+                rotation_speed = -x_mean_base/840
+                print("Commanded fwd. speed: {}".format(speed))
+                print("Commanded rot. speed: {}".format(rotation_speed))
                 self.drive(speed, rotation_speed)
 
         print("Close to base station")
