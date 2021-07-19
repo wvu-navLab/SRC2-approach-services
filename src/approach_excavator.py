@@ -74,7 +74,7 @@ class ApproachExcavatorService(BaseApproachClass):
         self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
 
         rospy.sleep(2)
-        rospy.logerr("APPROACH EXCAVATOR. Approach Excavator service node is running")
+        rospy.loginfo("Approach Excavator service node is running")
         s = rospy.Service('approach_excavator_service', ApproachExcavator,
                           self.approach_excavator_handle)
         rospy.spin()
