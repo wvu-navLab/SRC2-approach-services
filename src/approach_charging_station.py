@@ -245,7 +245,7 @@ class ApproachChargingStationService(BaseApproachClass):
             if distance < LASER_RANGE:
                 break
             else:
-                speed = ROVER_MIN_VEL*(distance-5.0)/10.0
+                speed = ROVER_MIN_VEL*(distance-4.0)/10.0
                 self.drive(speed, rotation_speed)
 
         print("Close to base station")
