@@ -14,6 +14,7 @@ from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Twist
 from src2_object_detection.msg import Box
 from src2_object_detection.msg import DetectedBoxes
+from src2_object_detection.srv import DistanceEstimation, DistanceEstimationResponse
 from src2_object_detection.srv import ObjectEstimation, ObjectEstimationResponse
 from src2_object_detection.srv import FindObject, FindObjectResponse
 from src2_approach_services.srv import ApproachChargingStation, ApproachChargingStationResponse
