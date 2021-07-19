@@ -305,7 +305,7 @@ class ApproachExcavatorService(BaseApproachClass):
                 self.drive(speed/2, rotation_speed/2)
         rospy.logerr("APPROACH EXCAVATOR. Close to Excavator")
         self.stop()
-        return self.laser_mean(), True
+        return median_distance, True
 
     def check_for_excavator(self, boxes):
         """
