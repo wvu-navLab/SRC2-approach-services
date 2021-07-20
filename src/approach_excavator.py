@@ -281,7 +281,7 @@ class ApproachExcavatorService(BaseApproachClass):
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             rotation_speed = -x_mean_base/840
 
-            if median_distance < self.distance_threshold:
+            if median_distance < self.distance_threshold or laser < self.distance_threshold*0.8 :
                 rospy.logerr("APPROACH EXCAVATOR. Approached to target (median distance). Stopping.")
                 self.stop()
                 break
