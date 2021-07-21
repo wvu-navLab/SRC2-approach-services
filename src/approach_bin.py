@@ -56,7 +56,7 @@ class ApproachbinService(BaseApproachClass):
         self.boxes = DetectedBoxes()
         self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
-        rospy.loginfo("Approach bin service node is running for {}".format(self.robot_name))
+        rospy.loginfo("[{}] Approach bin service node is running ".format(self.robot_name))
         s = rospy.Service('approach_bin_service', ApproachBin,
                           self.approach_bin_handle)
         rospy.spin()

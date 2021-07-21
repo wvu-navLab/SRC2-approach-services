@@ -30,10 +30,8 @@ import cv2
 from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
-
 from base_approach_class import BaseApproachClass
 
-print_to_terminal = rospy.get_param('approach_base_station_service/print_to_terminal', False)
 ROVER_MIN_VEL = rospy.get_param('approach_base_station_service/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_base_station_service/approach_timeout', 50)
 LASER_RANGE = 5
@@ -49,14 +47,13 @@ class Obstacle:
 
 class ApproachChargingStationService(BaseApproachClass):
     """
-    Service to find the base station and approach it using visual servoing
+    Service to find the charging station and approach it using visual servoing
     """
     def __init__(self):
         """
         """
         self.robot_name = rospy.get_param("robot_name")
-
-        # self.robot_name = 'small_scout_1'
+        rospy.loginfo("[{}] Approach Charging Station service node is running".format(self.robot_name))
         rospy.on_shutdown(self.shutdown)
         self.base = False
         self.obstacles = []
@@ -64,23 +61,24 @@ class ApproachChargingStationService(BaseApproachClass):
         self.boxes = DetectedBoxes()
         self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
         rospy.sleep(2)
-        rospy.loginfo("Approach Charging Station service node is running")
         s = rospy.Service('approach_charging_station_service', ApproachChargingStation, self.approach_charging_station_handle)
         rospy.spin()
 
     def image_subscriber(self):
         """
-        Define the Subscriber with time synchronization among the image topics
-        from the stereo camera
+        Define the Subscriber for disparity image
         """
         self.disparity_sub = rospy.Subscriber("disparity", DisparityImage, self.image_callback)
 
     def image_unregister(self):
+        """
+        Unregister the disparity image subscriber
+        """
         self.disparity_sub.unregister()
 
     def image_callback(self, disparity):
         """
-        Subscriber callback for the stereo camera, with synchronized images
+        callback for the disparity image and for calling the inference service
         """
         self.obstacles = []
         self.disparity = disparity
@@ -93,7 +91,6 @@ class ApproachChargingStationService(BaseApproachClass):
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
         self.boxes = _find_object.boxes
-        print(self.boxes.boxes)
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
             dist = self.object_distance_estimation(obstacle)
@@ -103,11 +100,11 @@ class ApproachChargingStationService(BaseApproachClass):
         """
         Service for approaching the base station in the SRC qualification
         """
-        rospy.loginfo("Approach Base Station Service Started")
+        rospy.loginfo("[{}] Approach Base Station Service Started".format(self.robot_name))
         self.image_subscriber()
-        rospy.sleep(0.5) #fix it - subscriber needs to run one time before the rest of the code starts
+        rospy.sleep(0.5)
         response = self.search_for_base_station()
-        #subscriber unregister #todo figure out how to unregisterd
+        #subscriber unregister
         self.image_unregister()
         self.toggle_light(20) #turn on the lights at the end
         print("Subscriber unregisterd")
@@ -125,59 +122,48 @@ class ApproachChargingStationService(BaseApproachClass):
         double_check = False
         self.toggle_light(10)
         if self.base: #try in front
-            print("Charging station found first time")
+            rospy.loginfo("[{}] Found the charging station found first time".format(self.robot_name))
             self.base = False
             self.stop()
             rospy.sleep(0.8)
             self.check_for_base_station(self.boxes.boxes)
             if self.base:
-                print("Charging station found second time")
+                rospy.loginfo("[{}] Found the charging station found second time".format(self.robot_name))
                 double_check == True
                 if print_to_terminal:
                     print(self.base)
                 self.stop()
                 _range, search = self.approach_base_station()
-                if print_to_terminal:
-                    print("Rover approach to base station was: {}"
-                        "and the laser distance is {}".format(search, _range))
                 if search == True:
                     self.face_base()
                 self.stop()
-
         if double_check == False:        #else turn in place
             for i in range(240):
-
+                # Toggle light
                 if toggle_light_ == 1:
                     self.toggle_light(10)
                     toggle_light_ = 0
                 else:
                     self.toggle_light(0)
                     toggle_light_ = 1
-
+                #turn in place
                 self.turn_in_place(1)
                 self.check_for_base_station(self.boxes.boxes)
-
                 if self.base: #try in front
-                    print("Charging station found first time")
+                    rospy.loginfo("[{}] Found the charging station found first time".format(self.robot_name))
                     self.base = False
                     self.stop()
                     rospy.sleep(0.5)
                     self.check_for_base_station(self.boxes.boxes)
-
                     if self.base:
-                        print("Charging station found second time")
-                        if print_to_terminal:
-                            print(self.base)
+                        rospy.loginfo("[{}] Found the charging station found second time".format(self.robot_name))
                         self.stop()
                         _range, search = self.approach_base_station()
-                        if print_to_terminal:
-                            print("Rover approach to base station was: {}"
-                                "and the laser distance is {}".format(search, _range))
                         if search == True:
                             self.face_base()
                         self.stop()
                         break
-
+        # Reset camera pitch to zero
         self.mast_camera_publisher_pitch.publish(0.0)
         self.stop()
 
@@ -189,9 +175,9 @@ class ApproachChargingStationService(BaseApproachClass):
         base_station_range.data = float(_range)
         response.range = base_station_range
         if search == True:
-            rospy.loginfo("Rover approached base station")
+            rospy.loginfo("[{}] Rover approached base station - Success".format(self.robot_name))
         else:
-            rospy.logerr("Base Station was not found when running turn in place maneuver or timeout")
+            rospy.logerr("[{}] Base Station was not found when running turn in place maneuver or timeout - Failure".format(self.robot_name))
         self.base = False # reset flag variable
         return response
 
@@ -210,7 +196,7 @@ class ApproachChargingStationService(BaseApproachClass):
             # Timeout for failing and leaving the loop
             curr_time = rospy.get_time()
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in approach base station service")
+                rospy.logerr("[{}] Timeout in approach charging station service".format(self.robot_name))
                 return 0.0, False
             # Toggle rover lights
             if toggle_light_ == 1:
@@ -228,33 +214,29 @@ class ApproachChargingStationService(BaseApproachClass):
                     dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
                     if dist < 5.0 and dist != 0.0:
-                        print("There's a rover in front of me. Distance: {}".format(dist))
+                        rospy.logwarn("[{}] There's a rover in front of me. Distance: {}".format(self.robot_name, dist))
                         self.stop()
                         rospy.sleep(10)
             # Calculate base station distance from different sensors
             median_distance = self.base_point_estimation().point.z
-            print("Charging station distance from disparity image: {}".format(median_distance))
+            rospy.loginfo("[{}] Charging station distance from disparity image: {}".format(self.robot_name, median_distance))
             laser = self.laser_mean()
-            print("Charging station distance from laser mean distance: {}".format(laser))
-
+            rospy.loginfo("Charging station distance from laser mean distance: {}".format(self.robot_name, laser))
+            # logic to stop the rover when close to the base station
             if median_distance == 0.0 or laser == Inf:
                 distance = Inf
             elif median_distance > 1.5*laser:
                 distance = median_distance
             else:
                 distance = laser
-
             if distance < LASER_RANGE:
                 break
             else:
                 x_mean_base = float(self.base.xmin+self.base.xmax)/2.0-320
                 speed = min(ROVER_MIN_VEL*(distance-5.0)/10.0 + ROVER_MIN_VEL/4, ROVER_MIN_VEL)
                 rotation_speed = -x_mean_base/840
-                print("Commanded fwd. speed: {}".format(speed))
-                print("Commanded rot. speed: {}".format(rotation_speed))
                 self.drive(speed, rotation_speed)
-
-        print("Close to base station")
+        rospy.loginfo("[{}] approached charging station - Close enough ".format(self.robot_name))
         self.stop()
         return self.laser_mean(), True
 
@@ -272,14 +254,12 @@ class ApproachChargingStationService(BaseApproachClass):
             #Time out
             curr_time = rospy.get_time()
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("Timeout in FACE BASE ")
+                rospy.logerr("[{}] Timeout in align to charging station".format(self.robot_name))
                 break
             # Check for base station
             self.check_for_base_station(self.boxes.boxes)
             # Get mean point
             x_mean = float(self.base.xmin+self.base.xmax)/2.0-320
-            if print_to_terminal:
-                print("base station mean in pixels: {}".format(-x_mean))
             # Turn in place to face mean
             self.drive(0.0, (-x_mean/320)/4) # was 640
             if np.abs(x_mean)<40: # was 10
@@ -298,9 +278,7 @@ class ApproachChargingStationService(BaseApproachClass):
         smaller_bounding_box.ymax = int(self.base.ymax - (self.base.ymax - self.base.ymin)*0.2)
         object_point = self.distance_estimation(smaller_bounding_box)
         _point = object_point.point
-
         return(_point)
-
 
     def distance_estimation(self, object):
         """
@@ -315,6 +293,14 @@ class ApproachChargingStationService(BaseApproachClass):
             print("Service did not process request: " + str(exc))
         return(object_distance)
 
+
+    def shutdown(self):
+        """
+        Shutdown Node
+        """
+        self.stop()
+        rospy.loginfo("[{}] Approach charging station service node is shutdown".format(self.robot_name))
+        rospy.sleep(1)
 
 def main():
     try:
