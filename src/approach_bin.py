@@ -82,10 +82,11 @@ class ApproachbinService(BaseApproachClass):
         self.obstacles = []
         self.disparity = disparity
         ##Calling the service
+        _find_object = FindObjectResponse()
         rospy.wait_for_service('/find_object')
-        _find_object =rospy.ServiceProxy('/find_object', FindObject)
+        find_object =rospy.ServiceProxy('/find_object', FindObject)
         try:
-            _find_object = _find_object(robot_name = self.robot_name)
+            _find_object = find_object(robot_name = self.robot_name)
         except rospy.ServiceException as exc:
             rospy.logerr("Approach Bin Service did not process request: " + str(exc))
         self.boxes = _find_object.boxes
