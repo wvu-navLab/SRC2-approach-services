@@ -237,7 +237,7 @@ class ApproachExcavatorService(BaseApproachClass):
             laser = self.laser_mean()
             rospy.loginfo("[{}] Pitch: {} - Exacavator median distance: {}, average distance: {}, Laser: {}".format(self.robot_name,
                                                                     _pitch, median_distance,
-                                                                    self.object_distance_estimation(self.rover).object_position.point.z), laser)
+                                                                    self.object_distance_estimation(self.rover).object_position.point.z, laser))
             speed = ROVER_MIN_VEL
             x_mean_base = float(self.rover.xmin+self.rover.xmax)/2.0-320
             rotation_speed = -x_mean_base/840
