@@ -235,8 +235,7 @@ class ApproachExcavatorService(BaseApproachClass):
             _pitch = self.face_excavator_mast_camera_pitch()
             median_distance = self.rover_point_estimation().point.z
             laser = self.laser_mean()
-            rospy.loginfo("[{}] Pitch: {} - Exacavator median distance: {}, \
-                           average distance: {}, Laser: {}".format(self.robot_name,
+            rospy.loginfo("[{}] Pitch: {} - Exacavator median distance: {}, average distance: {}, Laser: {}".format(self.robot_name,
                                                                     _pitch, median_distance,
                                                                     self.object_distance_estimation(self.rover).object_position.point.z), laser)
             speed = ROVER_MIN_VEL
