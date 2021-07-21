@@ -170,7 +170,7 @@ class ApproachbinService(BaseApproachClass):
                     dist = self.object_distance_estimation(object_).object_position.point.z
                     self.check_for_rover(self.boxes.boxes)
                     if dist < 7.0 and dist != 0.0:
-                        rospy.logwarn("[{}] There's a rover in front of me. Distance: {}".format(dist))
+                        rospy.logwarn("[{}] There's a rover in front of me. Distance: {}".format(self.robot_name,dist))
                         self.stop()
                         rospy.sleep(10)
             laser = self.laser_mean()
