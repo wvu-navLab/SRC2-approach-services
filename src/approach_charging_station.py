@@ -108,7 +108,7 @@ class ApproachChargingStationService(BaseApproachClass):
         #subscriber unregister
         self.image_unregister()
         self.toggle_light(20) #turn on the lights at the end
-        print("Subscriber unregisterd")
+        rospy.logerr("Subscriber unregisterd")
         return response
 
     def search_for_base_station(self):
@@ -131,8 +131,6 @@ class ApproachChargingStationService(BaseApproachClass):
             if self.base:
                 rospy.loginfo("[{}] Found the charging station found second time".format(self.robot_name))
                 double_check == True
-                if print_to_terminal:
-                    print(self.base)
                 self.stop()
                 _range, search = self.approach_base_station()
                 if search == True:

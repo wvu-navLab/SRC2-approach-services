@@ -176,8 +176,6 @@ class BaseApproachClass:
                 _ind+=1
         if _ind != 0:
             range = _val/_ind
-            if print_to_terminal:
-                print("Laser Range: {}".format(range))
             return range
         else:
             return Inf

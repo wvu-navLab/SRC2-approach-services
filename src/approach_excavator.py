@@ -65,7 +65,6 @@ class ApproachExcavatorService(BaseApproachClass):
         self.rover = False
         self.robot_name = rospy.get_param('robot_name')
         rospy.loginfo("[{}] Approach Excavator service node is running".format(self.robot_name))
-        print(self.robot_name)
         self.obstacles = []
         self.timeout = 60
         self.camera_pitch = 0.0
@@ -213,7 +212,7 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         Visual approach the excavator,
         """
-        print("[{}] Starting approach excavator maneuver - Range goal: {}".format(self.robot_name, LASER_RANGE))
+        rospy.loginfo("[{}] Starting approach excavator maneuver - Range goal: {}".format(self.robot_name, LASER_RANGE))
         while rospy.get_time() == 0:
             rospy.get_time()
         init_time = rospy.get_time()
