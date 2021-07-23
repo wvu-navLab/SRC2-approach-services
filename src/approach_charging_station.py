@@ -34,7 +34,7 @@ from base_approach_class import BaseApproachClass
 
 ROVER_MIN_VEL = rospy.get_param('approach_base_station_service/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_base_station_service/approach_timeout', 50)
-LASER_RANGE = 5
+LASER_RANGE = 6
 
 class Obstacle:
     """
