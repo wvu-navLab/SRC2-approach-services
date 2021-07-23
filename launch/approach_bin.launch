@@ -2,7 +2,7 @@
 
 <launch>
 
-  <node name="approach_bin_node" pkg="src2_approach_services" type="approach_bin.py" output="screen">
+  <node name="approach_bin_node" pkg="src2_approach_services" type="approach_bin.py" output="screen" launch-prefix="xterm -e">
   </node>
 
 </launch>

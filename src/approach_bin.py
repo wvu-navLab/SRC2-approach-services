@@ -51,7 +51,7 @@ class ApproachbinService(BaseApproachClass):
         self.robot_name = rospy.get_param("robot_name")
         rospy.on_shutdown(self.shutdown)
         self.bin = False
-        self.obstacles = []
+        self.regolith = False
         self.timeout = 60
         self.boxes = DetectedBoxes()
         self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
@@ -195,6 +195,13 @@ class ApproachbinService(BaseApproachClass):
                     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
             else:
                 self.drive(speed, rotation_speed)
+
+        self.check_for_regolith(self.boxes.boxes)
+        dist_regolith = self.object_distance_estimation(self.regolith).object_position.point.z
+        median_distance_regolith = self.regolith_point_estimation().point.z
+
+        rospy.loginfo("[{}] Approach bin. Distance: {}, Median distance: {}".format(self.robot_name,dist_regolith,median_distance_regolith))
+
         # Call Bin dumping for the hauler
         rospy.sleep(0.1)
         rospy.loginfo("[{}] Approach bin - Beginning first dump maneuver.".format(self.robot_name))
@@ -240,6 +247,35 @@ class ApproachbinService(BaseApproachClass):
             self.drive(0.0, (-x_mean/320)/4)
             if np.abs(x_mean) < 100:
                 break
+
+    def regolith_point_estimation(self):
+        """
+        Estimate the median distance of the rover from a reduced bounding box
+        Bounding box redeuced in 64% area
+        """
+        self.check_for_regolith(self.boxes.boxes)
+        smaller_bounding_box = self.regolith
+        smaller_bounding_box.xmin = int(self.regolith.xmin + (self.regolith.xmax - self.regolith.xmin)*0.2)
+        smaller_bounding_box.xmax = int(self.regolith.xmax - (self.regolith.xmax - self.regolith.xmin)*0.2)
+        smaller_bounding_box.ymin = int(self.regolith.ymin + (self.regolith.ymax - self.regolith.ymin)*0.2)
+        smaller_bounding_box.ymax = int(self.regolith.ymax - (self.regolith.ymax - self.regolith.ymin)*0.2)
+        object_point = self.regolith_distance_estimation(smaller_bounding_box)
+        _point = object_point.point
+
+        return(_point)
+
+    def regolith_distance_estimation(self, object):
+        """
+        Estimate distance from arg object to the camera of the robot.
+        Requires disparity image
+        """
+        rospy.wait_for_service('distance_estimation') #Change the name of the service
+        distance_estimation_call = rospy.ServiceProxy('distance_estimation', DistanceEstimation)
+        try:
+            object_distance = distance_estimation_call(object, self.disparity)
+        except rospy.ServiceException as exc:
+            print("Service did not process request: " + str(exc))
+        return(object_distance)
 
     def hauler_dump(self, value):
         """
