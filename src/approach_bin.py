@@ -197,10 +197,10 @@ class ApproachbinService(BaseApproachClass):
                 self.drive(speed, rotation_speed)
 
         self.check_for_regolith(self.boxes.boxes)
-        dist_regolith = self.object_distance_estimation(self.regolith).object_position.point.z
-        median_distance_regolith = self.regolith_point_estimation().point.z
-
-        # rospy.loginfo("[{}] Approach bin. Distance: {}, Median distance: {}".format(self.robot_name,dist_regolith,median_distance_regolith))
+        if self.regolith:
+            dist_regolith = self.object_distance_estimation(self.regolith).object_position.point.z
+            median_distance_regolith = self.regolith_point_estimation().point.z
+            rospy.loginfo("[{}] Approach bin. Distance: {}, Median distance: {}".format(self.robot_name,dist_regolith,median_distance_regolith))
 
         # Call Bin dumping for the hauler
         rospy.sleep(0.1)
