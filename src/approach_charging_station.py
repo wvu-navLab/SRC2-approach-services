@@ -220,7 +220,7 @@ class ApproachChargingStationService(BaseApproachClass):
             median_distance = self.base_point_estimation().point.z
             rospy.loginfo("[{}] Charging station distance from disparity image: {}".format(self.robot_name, median_distance))
             laser = self.laser_mean()
-            rospy.loginfo("Charging station distance from laser mean distance: {}".format(self.robot_name, laser))
+            rospy.loginfo("[{}] Charging station distance from laser mean distance: {}".format(self.robot_name, laser))
             # logic to stop the rover when close to the base station
             if median_distance == 0.0 or laser == Inf:
                 distance = Inf
