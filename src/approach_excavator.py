@@ -30,7 +30,6 @@ import cv2
 from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
-import math
 from numpy.core.numeric import Inf
 
 import tf2_ros
@@ -266,7 +265,7 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         Check if excavator exist in the bounding boxes
         """
-        dist = math.inf
+        dist = Inf
         for box in boxes:
             if box.id == 3:
                 if self.object_distance_estimation(box).object_position.point.z <= dist:
