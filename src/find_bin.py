@@ -74,7 +74,7 @@ class FindBinService(BaseApproachClass):
         """
         Method for unregister the image subscriber
         """
-        rospy.loginfo("Approach Bin Unregister Images for {}".format(self.robot_name))
+        rospy.loginfo("Find Bin Unregister Images for {}".format(self.robot_name))
         self.disparity_sub.unregister()
 
     def disparity_callback(self, disparity):
@@ -91,7 +91,7 @@ class FindBinService(BaseApproachClass):
         try:
             _find_object = find_object(robot_name = self.robot_name)
         except rospy.ServiceException as exc:
-            rospy.logerr("Approach Bin Service did not process request: " + str(exc))
+            rospy.logerr("Find Bin Service did not process request: " + str(exc))
         self.boxes = _find_object.boxes
         self.check_for_obstacles(self.boxes.boxes)
         for obstacle in self.obstacle_boxes:
@@ -190,11 +190,11 @@ class FindBinService(BaseApproachClass):
         while rospy.get_time() == 0:
             rospy.get_time()
         init_time = rospy.get_time()
-        rospy.loginfo("[{}] Approach bin trying to face excavator".format(self.robot_name))
+        rospy.loginfo("[{}] Find bin trying to face excavator".format(self.robot_name))
         while True:
             curr_time = rospy.get_time() # Timeout break:
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("[{}] Timeout in approach bin service (Face window)".format(self.robot_name))
+                rospy.logerr("[{}] Timeout in find bin service (Face window)".format(self.robot_name))
                 break
             # get the latest processing plant bin location from bounding boxes
             self.check_for_bin(self.boxes.boxes)

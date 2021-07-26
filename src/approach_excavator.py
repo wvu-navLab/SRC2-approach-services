@@ -264,9 +264,12 @@ class ApproachExcavatorService(BaseApproachClass):
         """
         Check if excavator exist in the bounding boxes
         """
+        dist = Inf
         for box in boxes:
             if box.id == 3:
-                self.rover = box
+                if self.object_distance_estimation(box).object_position.point.z <= dist:
+                    self.rover = box
+                    dist = self.object_distance_estimation(box).object_position.point.z
 
     def face_excavator(self):
         """
