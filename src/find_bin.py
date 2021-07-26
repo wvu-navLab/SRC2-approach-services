@@ -114,12 +114,13 @@ class FindBinService(BaseApproachClass):
         """
         Maneuvers for finding the bin in the image - turn in place
         """
-        status = False
+        self.hauler_pose = Pose()
+        status = True
         x = 0.0
         y = 0.0
         self.mast_camera_publisher_pitch.publish(0.0)
-        for i in range(240):
-            self.turn_in_place(-1)
+        for i in range(360):
+            self.turn_in_place(-0.90)
             self.check_for_bin(self.boxes.boxes)
             if self.bin:
                 rospy.loginfo("[{}] Bin was found with confidene of {}".format(self.robot_name,self.bin.confidence))
@@ -128,7 +129,9 @@ class FindBinService(BaseApproachClass):
                 break
         self.stop()
         response = FindBinResponse()
-        response.success = status
+        resp = Bool()
+        resp.data = status
+        response.success = resp
         response.x = Float64(x)
         response.y = Float64(y)
         self.bin = False  # reset flag variable
@@ -157,17 +160,20 @@ class FindBinService(BaseApproachClass):
 
         #(alpha - lower) % 360 <= (upper - lower) % 360
         # (angle-lower_bound)%360 <= (upper_pount - lower_bound) %360
-        if (_angle - 45) % 360 <= (90) % 360:
+        if (_angle - 135) % 360 <= (90) % 360:
             print("WITHIN BOUNDARY")
             return True , 0.0, 0.0
         else:
             print("OUTSIDE BOUNDARY")
-            theta = -(hauler_orientation_euler[2])
+            theta = (hauler_orientation_euler[2])
             print("Angle")
             print(np.rad2deg(theta))
             dist = self.object_distance_estimation(self.bin).object_position.point.z
-            _y = 10 - dist*np.cos(theta)
-            _x =  dist*np.sin(theta)
+            print("Dist: {}".format(dist))
+            if dist > 10.0:
+                dist = 10.0
+            _x = 10 - dist*np.cos(theta)
+            _y =  dist*np.sin(theta)
             print("X = {}".format(_x))
             print("Y = {}".format(_y))
             x = _x + self.hauler_pose.position.x
