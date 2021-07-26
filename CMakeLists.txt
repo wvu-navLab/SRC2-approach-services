@@ -42,9 +42,9 @@ add_service_files(
 
 
   ApproachChargingStation.srv
-  AlignBaseStation.srv
   ApproachBin.srv
   ApproachExcavator.srv
+  FindBin.srv
 
 )
 generate_messages(
@@ -75,7 +75,7 @@ catkin_package(
 ################################################################################
 # Install
 ################################################################################
-install(PROGRAMS src/approach_bin.py src/approach_charging_station.py src/approach_excavator.py src/base_approach_class.py
+install(PROGRAMS src/approach_bin.py src/approach_charging_station.py src/approach_excavator.py src/base_approach_class.py src/find_bin.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

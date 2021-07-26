@@ -147,13 +147,13 @@ class BaseApproachClass:
                 self.bin = box
 
 
-    def check_for_regolith(self, boxes):
+    def check_for_window(self, boxes):
         """
-        check for grey window above bin to perform alignment (face_regolith)
+        check for grey window above bin to perform alignment (face_window)
         """
         for box in boxes:
             if box.id == 12: # bin id == 6 -- regolith id == 12
-                self.regolith = box
+                self.window = box
 
     def check_for_base_station(self,boxes):
         """

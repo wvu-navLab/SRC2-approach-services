@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node name="find_bin" pkg="src2_approach_services" type="find_bin.py" output="screen" >
+    </node>
+</launch>

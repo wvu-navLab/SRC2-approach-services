@@ -51,7 +51,7 @@ class ApproachbinService(BaseApproachClass):
         self.robot_name = rospy.get_param("robot_name")
         rospy.on_shutdown(self.shutdown)
         self.bin = False
-        self.regolith = False
+        self.window = False
         self.timeout = 60
         self.boxes = DetectedBoxes()
         self.mast_camera_publisher_pitch = rospy.Publisher("sensor/pitch/command/position", Float64, queue_size = 10 )
@@ -122,7 +122,7 @@ class ApproachbinService(BaseApproachClass):
                 self.stop()
                 _range, search = self.approach_bin()
                 if search == True:
-                    self.face_regolith()
+                    self.face_window()
                 self.stop()
                 break
         self.stop()
@@ -189,18 +189,18 @@ class ApproachbinService(BaseApproachClass):
                 x_mean = float(self.bin.xmin+self.bin.xmax)/2.0-320
                 if np.abs(x_mean) >= 100:
                     self.stop()
-                    self.face_regolith()
+                    self.face_window()
                 else:
                     self.drive(speed/2, rotation_speed/4)
                     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
             else:
                 self.drive(speed, rotation_speed)
 
-        self.check_for_regolith(self.boxes.boxes)
-        if self.regolith:
-            dist_regolith = self.object_distance_estimation(self.regolith).object_position.point.z
-            median_distance_regolith = self.regolith_point_estimation().point.z
-            rospy.loginfo("[{}] Approach bin. Distance: {}, Median distance: {}".format(self.robot_name,dist_regolith,median_distance_regolith))
+        self.check_for_window(self.boxes.boxes)
+        if self.window:
+            dist_window = self.object_distance_estimation(self.window).object_position.point.z
+            median_distance_window = self.window_point_estimation().point.z
+            rospy.loginfo("[{}] Approach bin. Distance: {}, Median distance: {}".format(self.robot_name,dist_window,median_distance_window))
 
         # Call Bin dumping for the hauler
         rospy.sleep(0.1)
@@ -226,7 +226,7 @@ class ApproachbinService(BaseApproachClass):
         self.stop()
         return self.laser_mean(), True
 
-    def face_regolith(self):
+    def face_window(self):
         """
         Service to align the rover to the bin using
         bounding boxes from inference node
@@ -239,7 +239,7 @@ class ApproachbinService(BaseApproachClass):
             curr_time = rospy.get_time() # Timeout break:
             rospy.loginfo("[{}] Approach bin trying to face excavator".format(self.robot_name))
             if curr_time - init_time > APPROACH_TIMEOUT:
-                rospy.logerr("[{}] Timeout in approach bin service (Face Regolith)".format(self.robot_name))
+                rospy.logerr("[{}] Timeout in approach bin service (Face window)".format(self.robot_name))
                 break
             # get the latest processing plant bin location from bounding boxes
             self.check_for_bin(self.boxes.boxes)
@@ -248,23 +248,23 @@ class ApproachbinService(BaseApproachClass):
             if np.abs(x_mean) < 100:
                 break
 
-    def regolith_point_estimation(self):
+    def window_point_estimation(self):
         """
         Estimate the median distance of the rover from a reduced bounding box
         Bounding box redeuced in 64% area
         """
-        self.check_for_regolith(self.boxes.boxes)
-        smaller_bounding_box = self.regolith
-        smaller_bounding_box.xmin = int(self.regolith.xmin + (self.regolith.xmax - self.regolith.xmin)*0.2)
-        smaller_bounding_box.xmax = int(self.regolith.xmax - (self.regolith.xmax - self.regolith.xmin)*0.2)
-        smaller_bounding_box.ymin = int(self.regolith.ymin + (self.regolith.ymax - self.regolith.ymin)*0.2)
-        smaller_bounding_box.ymax = int(self.regolith.ymax - (self.regolith.ymax - self.regolith.ymin)*0.2)
-        object_point = self.regolith_distance_estimation(smaller_bounding_box)
+        self.check_for_window(self.boxes.boxes)
+        smaller_bounding_box = self.window
+        smaller_bounding_box.xmin = int(self.window.xmin + (self.window.xmax - self.window.xmin)*0.2)
+        smaller_bounding_box.xmax = int(self.window.xmax - (self.window.xmax - self.window.xmin)*0.2)
+        smaller_bounding_box.ymin = int(self.window.ymin + (self.window.ymax - self.window.ymin)*0.2)
+        smaller_bounding_box.ymax = int(self.window.ymax - (self.window.ymax - self.window.ymin)*0.2)
+        object_point = self.window_distance_estimation(smaller_bounding_box)
         _point = object_point.point
 
         return(_point)
 
-    def regolith_distance_estimation(self, object):
+    def window_distance_estimation(self, object):
         """
         Estimate distance from arg object to the camera of the robot.
         Requires disparity image
@@ -279,7 +279,7 @@ class ApproachbinService(BaseApproachClass):
 
     def hauler_dump(self, value):
         """
-        Dump command once aligned with bin (regolith)
+        Dump command once aligned with bin (window)
         """
         rospy.loginfo("[{}] Dumping - angle: {}".format(self.robot_name,value))
         _cmd_pub_dump = rospy.Publisher("bin/command/position", Float64, queue_size=10)
@@ -289,7 +289,7 @@ class ApproachbinService(BaseApproachClass):
 
     def hauler_bin_reset(self, value):
         """
-        Dump command once aligned with bin (regolith)
+        Dump command once aligned with bin (window)
         """
         _cmd_pub_dump = rospy.Publisher("bin/command/position", Float64, queue_size=10)
         _cmd_message = float(value)
