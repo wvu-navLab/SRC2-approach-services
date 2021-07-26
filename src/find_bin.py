@@ -98,14 +98,14 @@ class FindBinService(BaseApproachClass):
             dist = self.object_distance_estimation(obstacle)
             self.obstacles.append(Obstacle(obstacle, dist.object_position.point.z))
 
-    def approach_bin_handle(self, req):
+    def find_bin_handle(self, req):
         """
-        Service for approaching the bin in the SRC qualification
+        Service for finding the bin
         """
         self.image_subscriber()
         self.toggle_light(0) #turn off lights at the beginning
-        response = self.search_for_bin()
         rospy.loginfo("[{}] Find Bin Service Started".format(self.robot_name))
+        response = self.search_for_bin()
         self.image_unregister()
         self.toggle_light(20) #turn lights at the end
         return response
@@ -128,13 +128,13 @@ class FindBinService(BaseApproachClass):
                 break
         self.stop()
         response = FindBinResponse()
-        resp = Bool()
-        resp.success = status
-        response.success = resp
+        response.success = status
         response.x = Float64(x)
         response.y = Float64(y)
         self.bin = False  # reset flag variable
         self.mast_camera_publisher_pitch.publish(0.0)
+        print("Old Pose: {}, {}".format(self.hauler_pose.position.x, self.hauler_pose.position.y))
+        print("New Pose: {}, {}".format(x,y))
         return response
 
 
@@ -159,22 +159,22 @@ class FindBinService(BaseApproachClass):
         # (angle-lower_bound)%360 <= (upper_pount - lower_bound) %360
         if (_angle - 45) % 360 <= (90) % 360:
             print("WITHIN BOUNDARY")
-            return True , 0.0,0.0
+            return True , 0.0, 0.0
         else:
             print("OUTSIDE BOUNDARY")
             theta = -(hauler_orientation_euler[2])
             print("Angle")
             print(np.rad2deg(theta))
-            dist = self.object_distance_estimation(self.regolith).object_position.point.z
-
-            rospy.wait_for_service("")
-            _y = 10 - dist*cos(theta)
-            _x =  dist*sin(theta)
+            dist = self.object_distance_estimation(self.bin).object_position.point.z
+            _y = 10 - dist*np.cos(theta)
+            _x =  dist*np.sin(theta)
             print("X = {}".format(_x))
             print("Y = {}".format(_y))
+            x = _x + self.hauler_pose.position.x
+            y = _y + self.hauler_pose.position.y
 
-            return False
-            
+            return False, x, y
+
     def face_window(self):
         """
         Service to align the rover to the bin using
