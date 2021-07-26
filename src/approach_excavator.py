@@ -256,7 +256,14 @@ class ApproachExcavatorService(BaseApproachClass):
                     self.drive(speed/4, rotation_speed/4)
                     # if within LASER_RANGE, approach to half that distance ~2m? very slowly
             else:
-                self.drive(speed/2, rotation_speed/2)
+                self.check_for_excavator(self.boxes.boxes)
+                x_mean = float(self.rover.xmin+self.rover.xmax)/2.0-320
+                if np.abs(x_mean) >= 200:
+                    self.stop()
+                    rospy.logwarn("[{}] Excavator going out of view (xmean {}), calling face excavator maneuver".format(self.robot_name,x_mean))
+                    self.face_excavator()
+                else:
+                    self.drive(speed/2, rotation_speed/2)
         rospy.loginfo("[{}] Close to Excavator, approach maneuver finished".format(self.robot_name))
         self.stop()
         return median_distance, True
