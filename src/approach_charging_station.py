@@ -31,6 +31,7 @@ from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
 from base_approach_class import BaseApproachClass
+from numpy.core.numeric import Inf
 
 ROVER_MIN_VEL = rospy.get_param('approach_base_station_service/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_base_station_service/approach_timeout', 50)

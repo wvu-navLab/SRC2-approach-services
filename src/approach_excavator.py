@@ -30,6 +30,8 @@ import cv2
 from tf import TransformListener, TransformBroadcaster
 import tf.transformations as t_
 import numpy as np
+from numpy.core.numeric import Inf
+
 
 import tf2_ros
 from tf2_geometry_msgs import PointStamped

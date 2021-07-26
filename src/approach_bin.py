@@ -22,6 +22,7 @@ from sensor_msgs.msg import LaserScan
 from srcp2_msgs.srv import LocalizationSrv, SpotLightSrv  # AprioriLocationSrv,
 from base_approach_class import BaseApproachClass
 import numpy as np
+from numpy.core.numeric import Inf
 
 ROVER_MIN_VEL = rospy.get_param('approach_bin/rover_min_vel', 0.8)
 APPROACH_TIMEOUT = rospy.get_param('approach_bin/approach_timeout', 50)
