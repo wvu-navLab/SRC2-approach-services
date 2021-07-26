@@ -172,7 +172,7 @@ class FindBinService(BaseApproachClass):
             print("Dist: {}".format(dist))
             if dist > 10.0:
                 dist = 10.0
-            _x = 10 - dist*np.cos(theta)
+            _x = 10 + dist*np.cos(theta)
             _y =  dist*np.sin(theta)
             print("X = {}".format(_x))
             print("Y = {}".format(_y))
